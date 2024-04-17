@@ -1,0 +1,52 @@
+﻿<Window x:Class="ProjektV.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProjektV"
+        mc:Ignorable="d"
+        Title="" Height="450" Width="800">
+    <Window.Resources>
+        <Style x:Key="RoundButton" TargetType="Button">
+            <Setter Property="Background" Value="#007ACC"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#007ACC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.5" Color="#007ACC"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Border BorderBrush="Black" BorderThickness="3" Margin="10,10,201,10">
+            <Image x:Name="img1" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        </Border>
+        <Label x:Name="lblNoContent" Content="Žádný angiogram nebyl vybrán" Margin="10,10,201,10" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Label x:Name="lblResult" Content="Hustota krevního řečiště: 19.58%" Margin="10,10,201,10" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
+        <Button Content="Vybrat soubor" Width="150" Height="60" Margin="620,55,0,0" Click="Choose_file_button_click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
+        <Button Content="Vypočítat hustotu" Width="150" Height="60" Margin="620,135,0,0" Click="Calculate_density_button_click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
+        <Button Content="Exportovat obraz" Width="150" Height="60" Margin="620,215,0,0" Click="Export_button_click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
+        <Button Content="Editor" Width="150" Height="60" Margin="620,295,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Editor_button_click"/>
+        <Button Content="Vypočítat hustotu 2" Width="150" Height="60" Margin="620,364,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Button_Click"/>
+    </Grid>
+</Window>
