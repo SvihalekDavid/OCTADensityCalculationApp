@@ -220,13 +220,11 @@ namespace ProjektV
         {
             if (!wasFileSelected)
             {
-                ImageEditorWindow editorWindow = new ImageEditorWindow(angiogram, angiogramImageSource!);
-                editorWindow.ShowDialog();
+                MessageBox.Show("Nebyl vybrán žádný soubor");
+                return;
             }
-            else
-            {
-                MessageBox.Show("Nebyl vybrán žádný soubor.");
-            }
+            ImageEditorWindow editorWindow = new ImageEditorWindow(angiogram, angiogramImageSource!);
+            editorWindow.ShowDialog();
         }
 
         private Bitmap Otsu_Thresholding(Bitmap image)
