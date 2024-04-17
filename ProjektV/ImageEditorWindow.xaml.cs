@@ -28,37 +28,28 @@ namespace ProjektV
     /// </summary>
     public partial class ImageEditorWindow : Window
     {
-        string imagePath = "";
-        CroppedBitmap croppedBitmap;
-        CroppedBitmap currCroppedBitmap;
+        Bitmap angiogram;
+        ImageSource angiogramImageSource;
         System.Windows.Shapes.Rectangle currRectangle;
         double currX = 0;
         double currY = 0;
-        public ImageEditorWindow(string imagePath)
+        public ImageEditorWindow(Bitmap angiogram, ImageSource angiogramImageSource)
         {
             InitializeComponent();
             lblResult.Visibility = Visibility.Hidden;
-            this.imagePath = imagePath;
             try
             {
-                BitmapImage bitmap = new BitmapImage(new Uri(imagePath));
-                // Crop the original image
-                croppedBitmap = new CroppedBitmap(
-                    bitmap,
-                    new Int32Rect(519, 237, 1031 - 518, 748 - 236)
-                );
+                this.angiogram = angiogram;
+                this.angiogramImageSource = angiogramImageSource;
 
-
-                // <Image x:Name="img1" Stretch="Fill" Margin="0,26,0,0"/>
-                // Set the cropped image as the source for the Image control
-                img1.Source = croppedBitmap;
+                angiogramDisplay.Source = angiogramImageSource;
 
                 // Add the MouseLeftButtonDown event handler to the Image control
                 mainCanvas.MouseLeftButtonDown += Img1_MouseLeftButtonDown;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Chyba při načtení obrazu: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -111,18 +102,18 @@ namespace ProjektV
 
         private void Confirm_button_click(object sender, RoutedEventArgs e)
         {
-            CroppedBitmap newCroppedBitmap = new CroppedBitmap(
+            /*CroppedBitmap newCroppedBitmap = new CroppedBitmap(
                 croppedBitmap,
                 new Int32Rect((int)currX, (int)currY, (int)currRectangle.Width, (int)currRectangle.Height)
             );
-            img1.Source = newCroppedBitmap;
+            angiogramDisplay.Source = newCroppedBitmap;
             currCroppedBitmap = newCroppedBitmap;
-            Remove_selection();
+            Remove_selection();*/
         }
 
         private void Remove_selection_click(object sender, RoutedEventArgs e)
         {
-            img1.Source = croppedBitmap;
+            angiogramDisplay.Source = angiogramImageSource;
             Remove_selection();
         }
 
@@ -140,11 +131,11 @@ namespace ProjektV
             double sumOfAllColors = 0;
             double sumOfAllPixels = 0;
 
-            for (int i = 0; i <= currCroppedBitmap.Height; ++i)
+            for (int i = 0; i <= angiogram.Height; ++i)
             {
-                for (int j = 0; j <= currCroppedBitmap.Width; ++j)
+                for (int j = 0; j <= angiogram.Width; ++j)
                 {
-                    System.Drawing.Color pixel = GetPixelColor(currCroppedBitmap, j, i);
+                    System.Drawing.Color pixel = angiogram.GetPixel(j, i);
                     sumOfAllColors += pixel.R;
                     ++sumOfAllPixels;
                 }
@@ -185,12 +176,6 @@ namespace ProjektV
 
         private void Export_button_click(object sender, RoutedEventArgs e)
         {
-            if (imagePath == "" || lblResult.Visibility == Visibility.Hidden)
-            {
-                MessageBox.Show("Nebyl vybrán žádný soubor, nebo nebyla vypočítána hustota krevního řečiště.");
-                return;
-            }
-
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.FileName = "Document"; // Default file name
             dlg.DefaultExt = ".png"; // Default file extension
@@ -216,10 +201,10 @@ namespace ProjektV
 
             // Convert CroppedBitmap to BitmapSource with additional rows
             string txt = lblResult.Content.ToString();
-            BitmapSource bitmapWithRows = ConvertCroppedBitmapToBitmapSourceWithRows(currCroppedBitmap, 30, txt.Substring(25));
+            //BitmapSource bitmapWithRows = ConvertCroppedBitmapToBitmapSourceWithRows(currCroppedBitmap, 30, txt.Substring(25));
 
             // Add the BitmapSource to the encoder
-            encoder.Frames.Add(BitmapFrame.Create(bitmapWithRows));
+            //encoder.Frames.Add(BitmapFrame.Create(bitmapWithRows));
 
             // Save the encoder to the specified path
             using (FileStream stream = new FileStream(path, FileMode.Create))
@@ -255,56 +240,9 @@ namespace ProjektV
             renderTargetBitmap.Render(drawingVisual);
 
             // Set the RenderTargetBitmap as the source for img1
-            img1.Source = renderTargetBitmap;
+            angiogramDisplay.Source = renderTargetBitmap;
 
             return renderTargetBitmap;
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            Bitmap img = new Bitmap(imagePath);
-            Bitmap binaryImage = new Bitmap(1031 - 518, 748 - 236);
-
-            for (int i = 237; i <= 748; ++i)
-            {
-                for (int j = 519; j <= 1031; ++j)
-                {
-                    System.Drawing.Color pixel = img.GetPixel(j, i);
-                    binaryImage.SetPixel(j - 519, i - 237, pixel);
-                }
-            }
-
-            if (imagePath == "")
-            {
-                MessageBox.Show("Nebyl vybrán žádný soubor, nebo nebyla vypočítána hustota krevního řečiště.");
-                return;
-            }
-            SaveFileDialog dlg = new SaveFileDialog();
-            dlg.FileName = "Document"; // Default file name
-            dlg.DefaultExt = ".png"; // Default file extension
-            dlg.Filter = "Supported image files (PNG, TIFF) | *.png;*.tif;*.tiff"; ; // Filter files by extension
-
-            // Show save file dialog box
-            Nullable<bool> result = dlg.ShowDialog();
-            string path = "";
-
-            // Process save file dialog box results
-            if (result == true)
-            {
-                // Save document
-                path = dlg.FileName;
-            }
-            else
-            {
-                return;
-            }
-
-            binaryImage.Save(path, ImageFormat.Png);
-
-            // Dispose of the original image after saving
-            img.Dispose();
-            binaryImage.Dispose();
-
         }
     }
 }

@@ -29,35 +29,54 @@ namespace ProjektV
     /// </summary>
     public partial class MainWindow : Window
     {
-        string imagePath = "";
+        const int ANGIOGRAM_ROW_START = 237, ANGIOGRAM_COLUMN_START = 519, ANGIOGRAM_ROW_END = 748, ANGIOGRAM_COLUMN_END = 1031;
+        Bitmap? angiogramFullImage;
+        Bitmap angiogram = new Bitmap(ANGIOGRAM_COLUMN_END - ANGIOGRAM_COLUMN_START + 1, ANGIOGRAM_ROW_END - ANGIOGRAM_ROW_START + 1);
+        ImageSource? angiogramImageSource, angiogramFullImageImageSource;
+        bool wasFileSelected = false;
         public MainWindow()
         {
             InitializeComponent();
             lblResult.Visibility = Visibility.Hidden;
         }
 
-        private void Choose_file_button_click(object sender, RoutedEventArgs e)
+        // Getting OCTA angiogram from a file functionality
+        private void Choose_File_Button_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog fileDialog = new();
-            fileDialog.Filter = "Supported image files (PNG, TIFF) | *.png;*.tif;*.tiff";
+            fileDialog.Filter = "Podporované obrazové formáty (PNG, TIFF) | *.png;*.tif;*.tiff";
 
             bool? success = fileDialog.ShowDialog();
 
             if (success == true)
             {
-                string path = fileDialog.FileName;
-                imagePath = path;
                 try
                 {
-                    BitmapImage bitmap = new BitmapImage(new Uri(path));
+                    angiogramFullImage = new Bitmap(fileDialog.FileName);
+             
+                    // cut the angiograms relevant part
+                    for (int i = ANGIOGRAM_ROW_START; i <= ANGIOGRAM_ROW_END; ++i)
+                    {
+                        for (int j = ANGIOGRAM_COLUMN_START; j <= ANGIOGRAM_COLUMN_END; ++j)
+                        {
+                            angiogram.SetPixel(j - ANGIOGRAM_COLUMN_START, i - ANGIOGRAM_ROW_START, angiogramFullImage.GetPixel(j, i));
+                        }
+                    }
+                    angiogramFullImageImageSource = ImageSourceFromBitmap(angiogramFullImage);
+                    angiogramImageSource = ImageSourceFromBitmap(angiogram);
+
+                    // hide labels
                     lblNoContent.Visibility = Visibility.Hidden;
                     lblResult.Visibility = Visibility.Hidden;
-                    img1.Source = bitmap;
+
+                    img1.Source = angiogramFullImageImageSource;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error loading image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Chyba při načtení obrazu: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
+                wasFileSelected = true;
             }
             else
             {
@@ -66,14 +85,14 @@ namespace ProjektV
             }
         }
 
-        private void Calculate_density_button_click(object sender, RoutedEventArgs e)
+        private void Calculate_Density_Button_Click(object sender, RoutedEventArgs e)
         {
-            if (imagePath == "")
+            // Check for no file cases
+            if (!wasFileSelected)
             {
                 MessageBox.Show("Nebyl vybrán žádný soubor.");
                 return;
             }
-            Bitmap img = new Bitmap(imagePath);
 
             double sumOfAllColors = 0;
             double sumOfAllPixels = 0;
@@ -82,7 +101,7 @@ namespace ProjektV
             {
                 for (int j = 519; j <= 1031; ++j)
                 {
-                    System.Drawing.Color pixel = img.GetPixel(j, i);
+                    System.Drawing.Color pixel = angiogramFullImage!.GetPixel(j, i);
                     sumOfAllColors += pixel.R;
                     ++sumOfAllPixels;
                 }
@@ -95,20 +114,18 @@ namespace ProjektV
             Console.WriteLine(avgColorInPercentage);
             lblResult.Content = "Hustota krevního řečiště: " + avgColorInPercentage.ToString("N2") + " %";
             lblResult.Visibility = Visibility.Visible;
-            img.Dispose();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (imagePath == "")
+            if (!wasFileSelected)
             {
                 MessageBox.Show("Nebyl vybrán žádný soubor.");
                 return;
             }
-            Bitmap img = new Bitmap(imagePath);
 
             // Otsu's thresholding to convert the image to binary
-            Bitmap binaryImg = OtsuThresholding(img);
+            Bitmap binaryImg = Otsu_Thresholding(angiogramFullImage!);
 
             // Counting white pixels in the binary image
             int whitePixelCount = 0;
@@ -150,29 +167,11 @@ namespace ProjektV
             finally { DeleteObject(handle); }
         }
 
-        public BitmapImage ToBitmapImage(Bitmap bitmap)
+        private void Export_Button_Click(object sender, RoutedEventArgs e)
         {
-            using (var memory = new MemoryStream())
+            if (!wasFileSelected)
             {
-                bitmap.Save(memory, ImageFormat.Png);
-                memory.Position = 0;
-
-                var bitmapImage = new BitmapImage();
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-                bitmapImage.Freeze();
-
-                return bitmapImage;
-            }
-        }
-
-        private void Export_button_click(object sender, RoutedEventArgs e)
-        {
-            if (imagePath == "" || lblResult.Visibility == Visibility.Hidden)
-            {
-                MessageBox.Show("Nebyl vybrán žádný soubor, nebo nebyla vypočítána hustota krevního řečiště.");
+                MessageBox.Show("Nebyl vybrán žádný soubor");
                 return;
             }
             SaveFileDialog dlg = new SaveFileDialog();  
@@ -195,10 +194,8 @@ namespace ProjektV
                 return;
             }
 
-            Bitmap img = new Bitmap(imagePath);
-
             // Create a Graphics object from the image
-            using (Graphics graphics = Graphics.FromImage(img))
+            using (Graphics graphics = Graphics.FromImage(angiogramFullImage!))
             {
                 // Set the font and brush for the text
                 Font font = new Font("Arial", 14);
@@ -215,18 +212,15 @@ namespace ProjektV
                 graphics.DrawString(lblResult.Content.ToString(), font, brush, x, y);
 
                 // Save the image with the text
-                img.Save(path, ImageFormat.Png);
+                angiogramFullImage!.Save(path, ImageFormat.Png);
             }
-
-            // Dispose of the original image after saving
-            img.Dispose();
         }
 
-        private void Editor_button_click(object sender, RoutedEventArgs e)
+        private void Editor_Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(imagePath))
+            if (!wasFileSelected)
             {
-                ImageEditorWindow editorWindow = new ImageEditorWindow(imagePath);
+                ImageEditorWindow editorWindow = new ImageEditorWindow(angiogram, angiogramImageSource!);
                 editorWindow.ShowDialog();
             }
             else
@@ -235,7 +229,7 @@ namespace ProjektV
             }
         }
 
-        private Bitmap OtsuThresholding(Bitmap image)
+        private Bitmap Otsu_Thresholding(Bitmap image)
         {
             // Convert the image to grayscale
             Bitmap grayImage = image;

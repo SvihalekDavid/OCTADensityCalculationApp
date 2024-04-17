@@ -40,7 +40,7 @@
     <Grid>
         <Canvas x:Name="mainCanvas" Margin="10,44,223,10">
             <Viewbox x:Name="imageVb" Width="513" Height="512" Canvas.Left="10">
-                <Image x:Name="img1" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <Image x:Name="angiogramDisplay" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </Viewbox>
         </Canvas>
         <Label x:Name="lblResult" Content="Hustota krevního řečiště: 19.58%" Margin="10,10,201,10" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
@@ -51,6 +51,5 @@
         <Label Content="Velikost selekce:" HorizontalAlignment="Left" Margin="620,374,0,0" VerticalAlignment="Top" Height="47" Width="150" FontSize="14"/>
         <Button Content="+" Width="54" Height="30" Margin="624,414,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
         <Button Content="-" Width="54" Height="30" Margin="716,414,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
-        <Button Content="Exportovat2" Width="150" Height="60" Margin="620,494,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Button_Click"/>
     </Grid>
 </Window>
