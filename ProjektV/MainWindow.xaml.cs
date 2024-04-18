@@ -30,9 +30,9 @@ namespace ProjektV
     public partial class MainWindow : Window
     {
         const int ANGIOGRAM_ROW_START = 237, ANGIOGRAM_COLUMN_START = 519, ANGIOGRAM_ROW_END = 748, ANGIOGRAM_COLUMN_END = 1031;
-        Bitmap? angiogramFullImage;
+        Bitmap? angiogramFullImage, angiogramBW, angiogramBWFullImage;
         Bitmap angiogram = new Bitmap(ANGIOGRAM_COLUMN_END - ANGIOGRAM_COLUMN_START + 1, ANGIOGRAM_ROW_END - ANGIOGRAM_ROW_START + 1);
-        ImageSource? angiogramImageSource, angiogramFullImageImageSource;
+        ImageSource? angiogramImageSource, angiogramFullImageImageSource, angiogramBWImageSource, angiogramBWFullImageImageSource;
         bool wasFileSelected = false;
         public MainWindow()
         {
@@ -53,7 +53,7 @@ namespace ProjektV
                 try
                 {
                     angiogramFullImage = new Bitmap(fileDialog.FileName);
-             
+
                     // cut the angiograms relevant part
                     for (int i = ANGIOGRAM_ROW_START; i <= ANGIOGRAM_ROW_END; ++i)
                     {
@@ -69,7 +69,7 @@ namespace ProjektV
                     lblNoContent.Visibility = Visibility.Hidden;
                     lblResult.Visibility = Visibility.Hidden;
 
-                    img1.Source = angiogramFullImageImageSource;
+                    imageMain.Source = angiogramFullImageImageSource;
                 }
                 catch (Exception ex)
                 {
@@ -94,63 +94,24 @@ namespace ProjektV
                 return;
             }
 
-            double sumOfAllColors = 0;
-            double sumOfAllPixels = 0;
-
-            for (int i = 237; i <= 748; ++i)
-            {
-                for (int j = 519; j <= 1031; ++j)
-                {
-                    System.Drawing.Color pixel = angiogramFullImage!.GetPixel(j, i);
-                    sumOfAllColors += pixel.R;
-                    ++sumOfAllPixels;
-                }
-            }
-
-            double avgColor = sumOfAllColors / sumOfAllPixels;
-            Console.WriteLine(avgColor);
-
-            double avgColorInPercentage = (100 * avgColor) / 255;
-            Console.WriteLine(avgColorInPercentage);
-            lblResult.Content = "Hustota krevního řečiště: " + avgColorInPercentage.ToString("N2") + " %";
-            lblResult.Visibility = Visibility.Visible;
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (!wasFileSelected)
-            {
-                MessageBox.Show("Nebyl vybrán žádný soubor.");
-                return;
-            }
-
             // Otsu's thresholding to convert the image to binary
-            Bitmap binaryImg = Otsu_Thresholding(angiogramFullImage!);
+            angiogramBW = Otsu_Thresholding(angiogram);
+
+            // Create a new viewable binarized angiogram
+            Create_AngiogramFull_From_AngiogramBW();
+            angiogramBWImageSource = ImageSourceFromBitmap(angiogramBW);
+            angiogramBWFullImageImageSource = ImageSourceFromBitmap(angiogramBWFullImage!);
 
             // Counting white pixels in the binary image
-            int whitePixelCount = 0;
-            int pixelCount = 0;
+            const int MAX_VAL = 255;
+            int whitePixelCount = Return_Number_Of_Pixels_Of_Value(angiogramBW, MAX_VAL);
 
-            for (int i = 237; i <= 748; ++i)
-            {
-                for (int j = 519; j <= 1031; ++j)
-                {
-                    System.Drawing.Color pixel = binaryImg.GetPixel(j, i);
-                    if (pixel.R == 255) // Assuming white pixel is (255, 255, 255) in RGB
-                    {
-                        whitePixelCount++;
-                    }
-                    pixelCount++;
-                }
-            }
+            int pixelCount = angiogramBW.Width * angiogramBW.Height;
 
             double whitePixelPercentage = ((double)whitePixelCount / pixelCount) * 100;
-            lblResult.Content += "\nHustota krevního řečiště (po Otsu): " + whitePixelPercentage.ToString("N2") + " %";
+            lblResult.Content = "Hustota krevního řečiště: " + whitePixelPercentage.ToString("N2") + " %";
 
             lblResult.Visibility = Visibility.Visible;
-            img1.Source = ImageSourceFromBitmap(binaryImg);
-
-            binaryImg.Dispose();
         }
 
         [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
@@ -174,7 +135,7 @@ namespace ProjektV
                 MessageBox.Show("Nebyl vybrán žádný soubor");
                 return;
             }
-            SaveFileDialog dlg = new SaveFileDialog();  
+            SaveFileDialog dlg = new SaveFileDialog();
             dlg.FileName = "Document"; // Default file name
             dlg.DefaultExt = ".png"; // Default file extension
             dlg.Filter = "Supported image files (PNG, TIFF) | *.png;*.tif;*.tiff"; ; // Filter files by extension
@@ -227,23 +188,63 @@ namespace ProjektV
             editorWindow.ShowDialog();
         }
 
+        private void Mode_Swap_Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (imageMain.Source == angiogramBWFullImageImageSource)
+            {
+                imageMain.Source = angiogramFullImageImageSource;
+                return;
+            }
+            imageMain.Source = angiogramBWFullImageImageSource;
+
+        }
+
+        private int Return_Number_Of_Pixels_Of_Value(Bitmap img, int value)
+        {
+            int result = 0;
+
+            for (int i = 0; i < img.Height; ++i)
+            {
+                for (int j = 0; j < img.Width; ++j)
+                {
+                    if (img.GetPixel(j, i).R == value)
+                    {
+                        result++;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private void Create_AngiogramFull_From_AngiogramBW()
+        {
+            angiogramBWFullImage = angiogramFullImage!;
+
+            for (int i = ANGIOGRAM_ROW_START; i <= ANGIOGRAM_ROW_END; ++i)
+            {
+                for (int j = ANGIOGRAM_COLUMN_START; j <= ANGIOGRAM_COLUMN_END; ++j)
+                {
+                    angiogramBWFullImage.SetPixel(j, i, angiogramBW!.GetPixel(j - ANGIOGRAM_COLUMN_START, i - ANGIOGRAM_ROW_START));
+                }
+            }
+        }
+
         private Bitmap Otsu_Thresholding(Bitmap image)
         {
-            // Convert the image to grayscale
-            Bitmap grayImage = image;
 
             // Compute histogram
             int[] histogram = new int[256];
-            for (int i = 237; i <= 748; ++i)
+            for (int i = 0; i < angiogram.Height; ++i)
             {
-                for (int j = 519; j <= 1031; ++j)
+                for (int j = 0; j < angiogram.Width; ++j)
                 {
-                    System.Drawing.Color pixel = grayImage.GetPixel(j, i);
+                    System.Drawing.Color pixel = image.GetPixel(j, i);
                     histogram[pixel.R]++;
                 }
             }
             // Total number of pixels
-            int totalPixels = (1031 - 518) * (748 - 236);
+            int totalPixels = angiogram.Width * angiogram.Height;
 
             // Calculate sum of all pixel values
             double sum = 0;
@@ -285,41 +286,19 @@ namespace ProjektV
             }
 
             // Create binary image using the threshold
-            Bitmap binaryImage = new Bitmap(grayImage.Width, grayImage.Height);
+            Bitmap binaryImage = new Bitmap(angiogram.Width, angiogram.Height);
 
-            for (int i = 237; i <= 748; ++i)
+            for (int i = 0; i < angiogram.Height; i++)
             {
-                for (int j = 519; j <= 1031; ++j)
+                for (int j = 0; j < angiogram.Width; j++)
                 {
-                    System.Drawing.Color pixel = grayImage.GetPixel(j, i);
-                    histogram[pixel.R]++;
-                }
-            }
-
-            for (int i = 0; i < grayImage.Height; i++)
-            {
-                for (int j = 0; j < grayImage.Width; j++)
-                {
-                    System.Drawing.Color pixel = grayImage.GetPixel(j, i);
-
-                    if ((i >= 237 && i <= 748) && (j >= 519 && j <= 1031))
+                    if (angiogram.GetPixel(j, i).R <= threshold)
                     {
-                        if (pixel.R <= threshold)
-                        {
-                            binaryImage.SetPixel(j, i, System.Drawing.Color.Black);
-                        }
-                        else
-                        {
-                            binaryImage.SetPixel(j, i, System.Drawing.Color.White);
-                        }
-                    }
-                    else if (i > 100 && i < 200 && j > 100 && j < 200)
-                    {
-                        binaryImage.SetPixel(j, i, System.Drawing.Color.Cyan);
+                        binaryImage.SetPixel(j, i, System.Drawing.Color.Black);
                     }
                     else
                     {
-                        binaryImage.SetPixel(j, i, pixel);
+                        binaryImage.SetPixel(j, i, System.Drawing.Color.White);
                     }
                 }
             }

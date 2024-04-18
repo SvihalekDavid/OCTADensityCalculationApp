@@ -39,7 +39,7 @@
     </Window.Resources>
     <Grid>
         <Border BorderBrush="Black" BorderThickness="3" Margin="10,10,201,10">
-            <Image x:Name="img1" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <Image x:Name="imageMain" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         </Border>
         <Label x:Name="lblNoContent" Content="Žádný angiogram nebyl vybrán" Margin="10,10,201,10" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <Label x:Name="lblResult" Content="Hustota krevního řečiště: 19.58%" Margin="10,10,201,10" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
@@ -47,6 +47,6 @@
         <Button Content="Vypočítat hustotu" Width="150" Height="60" Margin="620,135,0,0" Click="Calculate_Density_Button_Click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
         <Button Content="Exportovat obraz" Width="150" Height="60" Margin="620,215,0,0" Click="Export_Button_Click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
         <Button Content="Editor" Width="150" Height="60" Margin="620,295,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Editor_Button_Click"/>
-        <Button Content="Vypočítat hustotu 2" Width="150" Height="60" Margin="620,364,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Button_Click"/>
+        <Button Content="Před/po segmentaci" Width="150" Height="60" Margin="620,364,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Mode_Swap_Button_Click"/>
     </Grid>
 </Window>
