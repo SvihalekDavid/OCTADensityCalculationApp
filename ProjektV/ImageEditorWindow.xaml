@@ -51,5 +51,25 @@
         <Label Content="Velikost selekce:" HorizontalAlignment="Left" Margin="620,374,0,0" VerticalAlignment="Top" Height="47" Width="150" FontSize="14"/>
         <Button Content="+" Width="54" Height="30" Margin="624,414,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
         <Button Content="-" Width="54" Height="30" Margin="716,414,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
+        <ToggleButton x:Name="btnSegmentation" FontSize="14" FontFamily="Arial" Checked="ToggleButton_Checked" Unchecked="ToggleButton_Unchecked" Margin="620,507,30,117">
+            <ToggleButton.Template>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5">
+                        <TextBlock x:Name="textBlock" Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="Green"/>
+                            <Setter TargetName="textBlock" Property="Text" Value="ON"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="False">
+                            <Setter TargetName="border" Property="Background" Value="Gray"/>
+                            <Setter TargetName="textBlock" Property="Text" Value="OFF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </ToggleButton.Template>
+        </ToggleButton>
+        <Label x:Name="lblSegmentation" Content="Angiogram po selekci:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="620,484,0,0"  FontSize="10"/>
     </Grid>
 </Window>

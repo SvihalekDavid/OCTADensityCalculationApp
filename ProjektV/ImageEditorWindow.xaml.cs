@@ -30,19 +30,43 @@ namespace ProjektV
     {
         Bitmap angiogram;
         ImageSource angiogramImageSource;
-        System.Windows.Shapes.Rectangle currRectangle;
+        Bitmap? angiogramBW;
+        ImageSource? angiogramBWImageSource;
+        System.Windows.Shapes.Rectangle? currRectangle;
+        bool isBWOn;
         double currX = 0;
         double currY = 0;
-        public ImageEditorWindow(Bitmap angiogram, ImageSource angiogramImageSource)
+        public ImageEditorWindow(Bitmap angiogram, ImageSource angiogramImageSource, Bitmap? angiogramBW, ImageSource? angiogramBWImageSource, bool isBWOn, string result)
         {
             InitializeComponent();
             lblResult.Visibility = Visibility.Hidden;
+            lblSegmentation.Visibility = Visibility.Hidden;
+            btnSegmentation.Visibility = Visibility.Hidden;
             try
             {
                 this.angiogram = angiogram;
                 this.angiogramImageSource = angiogramImageSource;
+                this.angiogramBW = angiogramBW;
+                this.angiogramBWImageSource = angiogramBWImageSource;
+                this.isBWOn = isBWOn;
 
-                angiogramDisplay.Source = angiogramImageSource;
+                if (isBWOn)
+                {
+                    angiogramDisplay.Source = angiogramBWImageSource;
+
+                }
+                else
+                {
+                    angiogramDisplay.Source = angiogramImageSource;
+                }
+
+                if (angiogramBW != null)
+                {
+                    lblResult.Content = result;
+                    lblResult.Visibility = Visibility.Visible;
+                    lblSegmentation.Visibility = Visibility.Visible;
+                    btnSegmentation.Visibility = Visibility.Visible;
+                }
 
                 // Add the MouseLeftButtonDown event handler to the Image control
                 mainCanvas.MouseLeftButtonDown += Img1_MouseLeftButtonDown;
@@ -128,26 +152,39 @@ namespace ProjektV
 
         private void Density_calculation_click(object sender, RoutedEventArgs e)
         {
-            double sumOfAllColors = 0;
-            double sumOfAllPixels = 0;
 
-            for (int i = 0; i <= angiogram.Height; ++i)
+            // TODO
+            if (lblResult.Visibility == Visibility.Visible)
             {
-                for (int j = 0; j <= angiogram.Width; ++j)
-                {
-                    System.Drawing.Color pixel = angiogram.GetPixel(j, i);
-                    sumOfAllColors += pixel.R;
-                    ++sumOfAllPixels;
-                }
+                return;
             }
-            double avgColor = sumOfAllColors / sumOfAllPixels;
 
-            double avgColorInPercentage = (100 * avgColor) / 255;
+            if (angiogramBW == null)
+            {
+                angiogramBW = SharedFunctions.Otsu_Thresholding(angiogram);
+                angiogramBWImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramBW);
+            }
 
-            lblResult.Content = "Hustota krevního řečiště: " + avgColorInPercentage.ToString("N2") + " %";
+            // TODO
+            if (currRectangle != null)
+            {
+                // cutt
+            }
+
+            lblResult.Content = SharedFunctions.Density_Calculation(angiogramBW);
+
             lblResult.Visibility = Visibility.Visible;
+            lblSegmentation.Visibility = Visibility.Visible;
+            btnSegmentation.Visibility = Visibility.Visible;
+        }
+        private void ToggleButton_Checked(object sender, RoutedEventArgs e)
+        {
+            angiogramDisplay.Source = angiogramBWImageSource;
+        }
 
-
+        private void ToggleButton_Unchecked(object sender, RoutedEventArgs e)
+        {
+            angiogramDisplay.Source = angiogramImageSource;
         }
 
         private System.Drawing.Color GetPixelColor(CroppedBitmap croppedBitmap, int x, int y)
