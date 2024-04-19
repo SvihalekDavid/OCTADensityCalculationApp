@@ -38,34 +38,40 @@
         </Style>
     </Window.Resources>
     <Grid>
-        <Border BorderBrush="Black" BorderThickness="3" Margin="10,10,201,10">
-            <Image x:Name="imageMain" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Border Grid.Column="0" BorderBrush="Black" BorderThickness="3" Margin="10 40 10 10">
+            <Image x:Name="imageMain" Stretch="Fill"/>
         </Border>
-        <Label x:Name="lblNoContent" Content="Žádný angiogram nebyl vybrán" Margin="10,10,201,10" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Label x:Name="lblResult" Content="Hustota krevního řečiště: 19.58%" Margin="10,10,201,10" HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="14"/>
-        <Button Content="Vybrat soubor" Width="150" Height="60" Margin="620,24,0,0" Click="Choose_File_Button_Click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
-        <Button Content="Vypočítat hustotu" Width="150" Height="60" Margin="620,104,0,0" Click="Calculate_Density_Button_Click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
-        <Button Content="Exportovat obraz" Width="150" Height="60" Margin="620,182,0,0" Click="Export_Button_Click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
-        <Button Content="Editor" Width="150" Height="60" Margin="620,260,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Editor_Button_Click"/>
-        <ToggleButton x:Name="btnSegmentation" Width="150" Height="60" Margin="620,364,30,10" FontSize="14" FontFamily="Arial" Checked="ToggleButton_Checked" Unchecked="ToggleButton_Unchecked">
-            <ToggleButton.Template>
-                <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5">
-                        <TextBlock x:Name="textBlock" Text="{Binding Path=Content, RelativeSource={RelativeSource TemplatedParent}}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="Green"/>
-                            <Setter TargetName="textBlock" Property="Text" Value="ON"/>
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="False">
-                            <Setter TargetName="border" Property="Background" Value="Gray"/>
-                            <Setter TargetName="textBlock" Property="Text" Value="OFF"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </ToggleButton.Template>
-        </ToggleButton>
-        <Label x:Name="lblSegmentation" Content="Ukázat angiogram po segmentaci:" HorizontalAlignment="Left" Margin="610,336,0,0" VerticalAlignment="Top" Width="170" FontSize="10"/>
+        <Label x:Name="lblNoContent" Grid.Column="0" Content="Žádný angiogram nebyl vybrán" Margin="0,0,0,0" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Label x:Name="lblResult" Grid.Column="0" Content="Hustota krevního řečiště: 19.58%" Margin="0,0,0,0" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        <StackPanel Grid.Column="1" Margin="0 0 10 0" VerticalAlignment="Center">
+            <Button Content="Vybrat soubor" Width="150" Height="60" Click="Choose_File_Button_Click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Margin="0,40,0,0"/>
+            <Button Content="Vypočítat hustotu" Width="150" Height="60" Click="Calculate_Density_Button_Click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Margin="0,10,0,0"/>
+            <Button Content="Exportovat obraz" Width="150" Height="60" Click="Export_Button_Click" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Margin="0,10,0,0"/>
+            <Button Content="Editor" Width="150" Height="60" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Editor_Button_Click" Margin="0,10,0,0"/>
+            <Label x:Name="lblSegmentation" Content="Angiogram po segmentaci:" Width="146" FontSize="10" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+            <ToggleButton x:Name="btnSegmentation" Width="150" Height="60" FontSize="14" FontFamily="Arial" Checked="ToggleButton_Checked" Unchecked="ToggleButton_Unchecked" HorizontalAlignment="Left" Margin="0,0,0,0">
+                <ToggleButton.Template>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5">
+                            <TextBlock x:Name="textBlock" Text="{Binding Path=Content, RelativeSource={RelativeSource TemplatedParent}}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="Green"/>
+                                <Setter TargetName="textBlock" Property="Text" Value="ON"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="Gray"/>
+                                <Setter TargetName="textBlock" Property="Text" Value="OFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </ToggleButton.Template>
+            </ToggleButton>
+        </StackPanel>
     </Grid>
 </Window>
