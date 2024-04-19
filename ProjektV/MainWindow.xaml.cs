@@ -148,6 +148,11 @@ namespace ProjektV
                 MessageBox.Show("Nebyl vybrán žádný soubor");
                 return;
             }
+            if (lblResult.Visibility != Visibility.Visible)
+            {
+                MessageBox.Show("Neproběhl výpočet hustoty krevního řečiště");
+                return;
+            }
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.FileName = "Document"; // Default file name
             dlg.DefaultExt = ".png"; // Default file extension

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ProjektV"
         mc:Ignorable="d"
-        Title="" Height="450" Width="800">
+        Title="Výpočet hustoty krevního řečiště z OCTA angiogramu" Height="450" Width="800">
     <Window.Resources>
         <Style x:Key="RoundButton" TargetType="Button">
             <Setter Property="Background" Value="#007ACC"/>
