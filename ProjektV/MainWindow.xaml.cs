@@ -22,6 +22,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Xml.Linq;
 using System.ComponentModel;
+using Windows.Services.Maps.LocalSearch;
 
 namespace ProjektV
 {
@@ -99,6 +100,10 @@ namespace ProjektV
                 MessageBox.Show("Nebyl vybrán žádný soubor.");
                 return;
             }
+            if (lblResult.Visibility == Visibility.Visible)
+            {
+                return;
+            }
 
             // Otsu's thresholding to convert the image to binary
             angiogramBW = Otsu_Thresholding(angiogram);
@@ -168,7 +173,10 @@ namespace ProjektV
             }
 
             // Create a Graphics object from the image
-            using (Graphics graphics = Graphics.FromImage(angiogramFullImage!))
+
+            Bitmap outputImage = Determine_Bitmap_From_ImageSource();
+
+            using (Graphics graphics = Graphics.FromImage(outputImage))
             {
                 // Set the font and brush for the text
                 Font font = new Font("Arial", 14);
@@ -185,8 +193,25 @@ namespace ProjektV
                 graphics.DrawString(lblResult.Content.ToString(), font, brush, x, y);
 
                 // Save the image with the text
-                angiogramFullImage!.Save(path, ImageFormat.Png);
+                string selectedExtension = System.IO.Path.GetExtension(dlg.FileName).ToLower();
+                if (selectedExtension == ".png")
+                {
+                    outputImage.Save(path, ImageFormat.Png);
+                }
+                else
+                {
+                    outputImage.Save(path, ImageFormat.Tiff);
+                }
             }
+        }
+
+        private Bitmap Determine_Bitmap_From_ImageSource()
+        {
+            if (imageMain.Source == angiogramFullImageImageSource)
+            {
+                return angiogramFullImage!;
+            }
+            return angiogramBWFullImage!;
         }
 
         private void SaveFileDialog_FileOk(object sender, CancelEventArgs e)
@@ -212,17 +237,6 @@ namespace ProjektV
             }
             ImageEditorWindow editorWindow = new ImageEditorWindow(angiogram, angiogramImageSource!);
             editorWindow.ShowDialog();
-        }
-
-        private void Mode_Swap_Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (imageMain.Source == angiogramBWFullImageImageSource)
-            {
-                imageMain.Source = angiogramFullImageImageSource;
-                return;
-            }
-            imageMain.Source = angiogramBWFullImageImageSource;
-
         }
 
         private void ToggleButton_Checked(object sender, RoutedEventArgs e)
@@ -255,7 +269,7 @@ namespace ProjektV
 
         private void Create_AngiogramFull_From_AngiogramBW()
         {
-            angiogramBWFullImage = angiogramFullImage!;
+            angiogramBWFullImage = new Bitmap(angiogramFullImage!);
 
             for (int i = ANGIOGRAM_ROW_START; i <= ANGIOGRAM_ROW_END; ++i)
             {
