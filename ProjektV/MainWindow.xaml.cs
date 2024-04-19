@@ -21,6 +21,7 @@ using System.Windows.Interop;
 using System.Runtime.InteropServices;
 using System.Windows.Media;
 using System.Xml.Linq;
+using System.ComponentModel;
 
 namespace ProjektV
 {
@@ -38,6 +39,8 @@ namespace ProjektV
         {
             InitializeComponent();
             lblResult.Visibility = Visibility.Hidden;
+            lblSegmentation.Visibility = Visibility.Hidden;
+            btnSegmentation.Visibility = Visibility.Hidden;
         }
 
         // Getting OCTA angiogram from a file functionality
@@ -65,15 +68,18 @@ namespace ProjektV
                     angiogramFullImageImageSource = ImageSourceFromBitmap(angiogramFullImage);
                     angiogramImageSource = ImageSourceFromBitmap(angiogram);
 
-                    // hide labels
+                    // hide labels and controls which cannot be accessed when a new file is selected
                     lblNoContent.Visibility = Visibility.Hidden;
                     lblResult.Visibility = Visibility.Hidden;
+                    lblSegmentation.Visibility = Visibility.Hidden;
+                    btnSegmentation.Visibility = Visibility.Hidden;
+                    btnSegmentation.IsChecked = false;
 
                     imageMain.Source = angiogramFullImageImageSource;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Chyba při načtení obrazu: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Chyba při načtení obrazu: {ex.Message}", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
                 wasFileSelected = true;
@@ -112,6 +118,8 @@ namespace ProjektV
             lblResult.Content = "Hustota krevního řečiště: " + whitePixelPercentage.ToString("N2") + " %";
 
             lblResult.Visibility = Visibility.Visible;
+            lblSegmentation.Visibility = Visibility.Visible;
+            btnSegmentation.Visibility = Visibility.Visible;
         }
 
         [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
@@ -138,7 +146,11 @@ namespace ProjektV
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.FileName = "Document"; // Default file name
             dlg.DefaultExt = ".png"; // Default file extension
-            dlg.Filter = "Supported image files (PNG, TIFF) | *.png;*.tif;*.tiff"; ; // Filter files by extension
+            dlg.Filter = "Podporované obrazové formáty (PNG, TIFF) | *.png;*.tif;*.tiff"; ; // Filter files by extension
+
+            // Hook up the FileOk event handler
+            dlg.FileOk += SaveFileDialog_FileOk!;
+
 
             // Show save file dialog box
             Nullable<bool> result = dlg.ShowDialog();
@@ -177,6 +189,20 @@ namespace ProjektV
             }
         }
 
+        private void SaveFileDialog_FileOk(object sender, CancelEventArgs e)
+        {
+            SaveFileDialog? dlg = sender as SaveFileDialog;
+            if (dlg != null)
+            {
+                string selectedExtension = System.IO.Path.GetExtension(dlg.FileName).ToLower();
+                if (selectedExtension != ".png" && selectedExtension != ".tif" && selectedExtension != ".tiff")
+                {
+                    MessageBox.Show("Neplatný typ souboru. Vyberte prosím soubor s příponou PNG nebo TIFF.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                    e.Cancel = true; // Cancel the file dialog
+                }
+            }
+        }
+
         private void Editor_Button_Click(object sender, RoutedEventArgs e)
         {
             if (!wasFileSelected)
@@ -197,6 +223,16 @@ namespace ProjektV
             }
             imageMain.Source = angiogramBWFullImageImageSource;
 
+        }
+
+        private void ToggleButton_Checked(object sender, RoutedEventArgs e)
+        {
+            imageMain.Source = angiogramBWFullImageImageSource;
+        }
+
+        private void ToggleButton_Unchecked(object sender, RoutedEventArgs e)
+        {
+            imageMain.Source = angiogramFullImageImageSource;
         }
 
         private int Return_Number_Of_Pixels_Of_Value(Bitmap img, int value)
