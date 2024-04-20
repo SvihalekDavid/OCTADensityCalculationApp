@@ -43,9 +43,9 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Canvas x:Name="mainCanvas" Grid.Column="0" Margin="10,40,10,10">
-            <Border Grid.Column="0" BorderBrush="Black" BorderThickness="3" Height="534" Width="620">
-                <Viewbox x:Name="imageVb" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    <Image x:Name="angiogramDisplay" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <Border x:Name="borderMain" Grid.Column="0" BorderBrush="Black" BorderThickness="3" Width="{Binding ActualWidth, ElementName=mainCanvas}" Height="{Binding ActualHeight, ElementName=mainCanvas}">
+                <Viewbox x:Name="imageVb" Stretch="Fill">
+                    <Image x:Name="angiogramDisplay" Stretch="Fill"/>
                 </Viewbox>
             </Border>
         </Canvas>

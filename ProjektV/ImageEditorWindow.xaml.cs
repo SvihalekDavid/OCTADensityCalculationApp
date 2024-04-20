@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation.Provider;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
@@ -53,11 +54,13 @@ namespace ProjektV
                 if (isBWOn)
                 {
                     angiogramDisplay.Source = angiogramBWImageSource;
+                    btnSegmentation.IsChecked = true;
 
                 }
                 else
                 {
                     angiogramDisplay.Source = angiogramImageSource;
+                    btnSegmentation.IsChecked = false;
                 }
 
                 if (angiogramBW != null)
@@ -80,48 +83,57 @@ namespace ProjektV
         private void Img1_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             // Get the mouse click position relative to the Image control
-            System.Windows.Point clickPoint = e.GetPosition(imageVb);
-            var point = PointToScreen(clickPoint);
+            System.Windows.Point clickPoint = e.GetPosition(mainCanvas);
 
             // Calculate the rectangle coordinates with the mouse click as the center
             double rectangleWidth = 100;
             double rectangleHeight = 100;
-            double rectangleX = clickPoint.X - rectangleWidth / 2;
-            double rectangleY = clickPoint.Y - rectangleHeight / 2;
+            double rectangleStartX = clickPoint.X - rectangleWidth / 2;
+            double rectangleStartY = clickPoint.Y - rectangleHeight / 2;
+            double rectangleEndX = clickPoint.X + rectangleWidth / 2;
+            double rectangleEndY = clickPoint.Y + rectangleHeight / 2;
 
-            if (rectangleX <= 0)
+            if (rectangleStartX < 0)
             {
-                rectangleX = 0;
+                rectangleStartX = 0;
             }
-            if (rectangleY <= 0)
+            else if (rectangleEndX > mainCanvas.ActualWidth)
             {
-                rectangleY = 0;
+                rectangleStartX = mainCanvas.ActualWidth - rectangleWidth;
             }
 
-            System.Windows.Shapes.Rectangle existingRedRectangle = mainCanvas.Children.OfType<System.Windows.Shapes.Rectangle>().FirstOrDefault();
-            if (existingRedRectangle != null)
+            if (rectangleStartY < 0)
             {
-                mainCanvas.Children.Remove(existingRedRectangle);
+                rectangleStartY = 0;
+            }
+            else if (rectangleEndY > mainCanvas.ActualHeight)
+            {
+                rectangleStartY = mainCanvas.ActualHeight - rectangleHeight;
+            }
+
+            // Delete existing rectangle
+            if (currRectangle != null)
+            {
+                mainCanvas.Children.Remove(currRectangle);
             }
 
             // Create a red rectangle
-            System.Windows.Shapes.Rectangle redRectangle = new System.Windows.Shapes.Rectangle
+            currRectangle = new System.Windows.Shapes.Rectangle
             {
                 Width = rectangleWidth,
                 Height = rectangleHeight,
                 Stroke = System.Windows.Media.Brushes.Red,
-                StrokeThickness = 2
+                StrokeThickness = 3
             };
 
             // Set the position of the red rectangle
-            Canvas.SetLeft(redRectangle, rectangleX);
-            Canvas.SetTop(redRectangle, rectangleY);
+            Canvas.SetLeft(currRectangle, rectangleStartX);
+            Canvas.SetTop(currRectangle, rectangleStartY);
 
             // Add the red rectangle to the Canvas
-            mainCanvas.Children.Add(redRectangle);
-            currRectangle = redRectangle;
-            currX = rectangleX;
-            currY = rectangleY;
+            mainCanvas.Children.Add(currRectangle);
+            currX = rectangleStartX;
+            currY = rectangleStartY;
         }
 
         private void Confirm_button_click(object sender, RoutedEventArgs e)
@@ -133,20 +145,21 @@ namespace ProjektV
             angiogramDisplay.Source = newCroppedBitmap;
             currCroppedBitmap = newCroppedBitmap;
             Remove_selection();*/
+            MessageBox.Show(mainCanvas.ActualHeight.ToString());
+            MessageBox.Show(borderMain.ActualHeight.ToString());
+            MessageBox.Show(imageVb.ActualHeight.ToString());
         }
 
         private void Remove_selection_click(object sender, RoutedEventArgs e)
         {
-            angiogramDisplay.Source = angiogramImageSource;
             Remove_selection();
         }
 
         private void Remove_selection()
         {
-            System.Windows.Shapes.Rectangle existingRedRectangle = mainCanvas.Children.OfType<System.Windows.Shapes.Rectangle>().FirstOrDefault();
-            if (existingRedRectangle != null)
+            if (currRectangle != null)
             {
-                mainCanvas.Children.Remove(existingRedRectangle);
+                mainCanvas.Children.Remove(currRectangle);
             }
         }
 

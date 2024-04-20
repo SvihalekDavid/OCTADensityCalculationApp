@@ -219,7 +219,7 @@ namespace ProjektV
                 MessageBox.Show("Nebyl vybrán žádný soubor");
                 return;
             }
-            ImageEditorWindow editorWindow = new ImageEditorWindow(angiogram!, angiogramImageSource!, angiogramBW, angiogramBWImageSource, imageMain.Source == angiogramBWFullImageImageSource, lblResult.Content.ToString());
+            ImageEditorWindow editorWindow = new ImageEditorWindow(angiogram!, angiogramImageSource!, angiogramBW, angiogramBWImageSource, imageMain.Source == angiogramBWFullImageImageSource, lblResult.Content.ToString()!);
             editorWindow.ShowDialog();
         }
 
