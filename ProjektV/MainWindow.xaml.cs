@@ -23,6 +23,7 @@ using System.Windows.Media;
 using System.Xml.Linq;
 using System.ComponentModel;
 using Windows.Services.Maps.LocalSearch;
+using MS.WindowsAPICodePack.Internal;
 
 namespace ProjektV
 {
@@ -63,7 +64,7 @@ namespace ProjektV
                     {
                         for (int j = ANGIOGRAM_COLUMN_START; j <= ANGIOGRAM_COLUMN_END; ++j)
                         {
-                            angiogram.SetPixel(j - ANGIOGRAM_COLUMN_START, i - ANGIOGRAM_ROW_START, angiogramFullImage.GetPixel(j, i));
+                             angiogram.SetPixel(j - ANGIOGRAM_COLUMN_START, i - ANGIOGRAM_ROW_START, angiogramFullImage.GetPixel(j, i));
                         }
                     }
                     angiogramFullImageImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramFullImage);
@@ -77,6 +78,12 @@ namespace ProjektV
                     btnSegmentation.IsChecked = false;
 
                     imageMain.Source = angiogramFullImageImageSource;
+
+                    // null any previous BW images
+                    angiogramBW = null;
+                    angiogramBWFullImage = null;
+                    angiogramBWImageSource = null;
+                    angiogramBWFullImageImageSource = null;
                 }
                 catch (Exception ex)
                 {
@@ -113,7 +120,7 @@ namespace ProjektV
             angiogramBWImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramBW);
             angiogramBWFullImageImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramBWFullImage!);
 
-            lblResult.Content = SharedFunctions.Density_Calculation(angiogramBW);
+            lblResult.Content = "Hustota krevního řečiště: " + SharedFunctions.Density_Calculation(angiogramBW).ToString("N2") + " %";
 
             lblResult.Visibility = Visibility.Visible;
             lblSegmentation.Visibility = Visibility.Visible;
@@ -266,7 +273,7 @@ namespace ProjektV
             return result;
         }
 
-        public static string Density_Calculation(Bitmap imgBW)
+        public static double Density_Calculation(Bitmap imgBW)
         {
             // Counting white pixels in the binary image
             const int MAX_VAL = 255;
@@ -274,8 +281,7 @@ namespace ProjektV
 
             int pixelCount = imgBW.Width * imgBW.Height;
 
-            double whitePixelPercentage = ((double)whitePixelCount / pixelCount) * 100;
-            return "Hustota krevního řečiště: " + whitePixelPercentage.ToString("N2") + " %";
+            return ((double)whitePixelCount / pixelCount) * 100;
         }
 
         [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]

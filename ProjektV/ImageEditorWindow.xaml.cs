@@ -34,7 +34,8 @@ namespace ProjektV
         Bitmap? angiogramBW;
         ImageSource? angiogramBWImageSource;
         System.Windows.Shapes.Rectangle? currRectangle;
-        bool isBWOn;
+        string? angiogramDensity;
+
         public ImageEditorWindow(Bitmap angiogram, ImageSource angiogramImageSource, Bitmap? angiogramBW, ImageSource? angiogramBWImageSource, bool isBWOn, string result)
         {
             InitializeComponent();
@@ -47,7 +48,6 @@ namespace ProjektV
                 this.angiogramImageSource = angiogramImageSource;
                 this.angiogramBW = angiogramBW;
                 this.angiogramBWImageSource = angiogramBWImageSource;
-                this.isBWOn = isBWOn;
 
                 if (isBWOn)
                 {
@@ -64,6 +64,7 @@ namespace ProjektV
                 if (angiogramBW != null)
                 {
                     lblResult.Content = result;
+                    angiogramDensity = result;
                     lblResult.Visibility = Visibility.Visible;
                     lblSegmentation.Visibility = Visibility.Visible;
                     btnSegmentation.Visibility = Visibility.Visible;
@@ -71,9 +72,6 @@ namespace ProjektV
 
                 // Add the MouseLeftButtonDown event handler to the Image control
                 mainCanvas.MouseLeftButtonDown += mainCanvas_MouseLeftButtonDown;
-
-                // Add a SizeChanged event handler to the mainCanvas
-                mainCanvas.SizeChanged += MainCanvas_SizeChanged;
             }
             catch (Exception ex)
             {
@@ -114,34 +112,8 @@ namespace ProjektV
             Canvas.SetLeft(currRectangle, rectangleStartX);
             Canvas.SetTop(currRectangle, rectangleStartY);
 
-
             // Add the red rectangle to the Canvas
             mainCanvas.Children.Add(currRectangle);
-        }
-
-        // Define the event handler
-        private void MainCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            // Check if the rectangle exists
-            if (currRectangle != null)
-            {
-                // Update the rectangle size
-                double rectangleWidth = currRectangle.Width * e.NewSize.Width / e.PreviousSize.Width;
-                double rectangleHeight = currRectangle.Height * e.NewSize.Height / e.PreviousSize.Height;
-
-                // Calculate the new rectangle position
-                double rectangleStartX = Canvas.GetLeft(currRectangle) * e.NewSize.Width / e.PreviousSize.Width;
-                double rectangleStartY = Canvas.GetTop(currRectangle) * e.NewSize.Height / e.PreviousSize.Height;
-
-                rectangleStartX = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartX, e.NewSize.Width, rectangleWidth);
-                rectangleStartY = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartY, e.NewSize.Height, rectangleHeight);
-
-                // Update the rectangle size and position
-                currRectangle.Width = rectangleWidth;
-                currRectangle.Height = rectangleHeight;
-                Canvas.SetLeft(currRectangle, rectangleStartX);
-                Canvas.SetTop(currRectangle, rectangleStartY);
-            }
         }
 
         private double Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(double startCoordinate, double maxCoordinateValue, double rectangleCoordinateSize)
@@ -161,37 +133,64 @@ namespace ProjektV
         {
             if (currRectangle != null)
             {
-                // Update the rectangle size
-                double newRectangleWidth = currRectangle.Width * angiogram.Width / mainCanvas.ActualWidth;
-                double newRectangleHeight = currRectangle.Height * angiogram.Height / mainCanvas.ActualHeight;
+                int croppedAngiogramWidth = (int)Math.Floor(currRectangle.Width - (2 * currRectangle.StrokeThickness));
+                int croppedAngiogramHeight = (int)Math.Floor(currRectangle.Height - (2 * currRectangle.StrokeThickness));
 
-                // Calculate the new rectangle position
-                int rectangleStartX = (int)Math.Round(Canvas.GetLeft(currRectangle) * angiogram.Width / mainCanvas.ActualWidth);
-                int rectangleStartY = (int)Math.Round(Canvas.GetTop(currRectangle) * angiogram.Height / mainCanvas.ActualHeight);
+                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currRectangle));
+                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currRectangle));
 
-                int selectionWidth = (int)Math.Round(newRectangleWidth - 2 * currRectangle.StrokeThickness);
-                int selectionHeight = (int)Math.Round(newRectangleHeight - 2 * currRectangle.StrokeThickness);
-
-
-                Bitmap croppedAngiogram = new Bitmap(selectionWidth, selectionHeight);
+                Bitmap croppedAngiogram = new Bitmap(croppedAngiogramWidth, croppedAngiogramHeight);
 
                 // cut the angiograms relevant part
-                for (int i = rectangleStartX; i <= rectangleStartX + selectionWidth; ++i)
+                for (int i = rectangleStartY; i < rectangleStartY + croppedAngiogramHeight; ++i)
                 {
-                    for (int j = rectangleStartY; j <= rectangleStartY + selectionHeight; ++j)
+                    for (int j = rectangleStartX; j < rectangleStartX + croppedAngiogramWidth; ++j)
                     {
-                        croppedAngiogram.SetPixel(j - rectangleStartY, i - rectangleStartX, angiogram.GetPixel(j, i));
+                        croppedAngiogram.SetPixel(j - rectangleStartX, i - rectangleStartY, angiogram.GetPixel(j, i));
                     }
                 }
-                ImageSource croppedAngiogramImageSource = SharedFunctions.ImageSourceFromBitmap(angiogram);
+                ImageSource croppedAngiogramImageSource = SharedFunctions.ImageSourceFromBitmap(croppedAngiogram);
                 angiogramDisplay.Source = croppedAngiogramImageSource;
-
+                angiogramDisplay.Width = angiogram.Width;
+                angiogramDisplay.Height = angiogram.Height;
             }
+        }
+
+        private Bitmap? Get_CroppedAngiogram_By_Selection()
+        {
+            if (currRectangle != null)
+            {
+                int croppedAngiogramWidth = (int)Math.Floor(currRectangle.Width - (2 * currRectangle.StrokeThickness));
+                int croppedAngiogramHeight = (int)Math.Floor(currRectangle.Height - (2 * currRectangle.StrokeThickness));
+
+                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currRectangle));
+                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currRectangle));
+
+                Bitmap croppedAngiogram = new Bitmap(croppedAngiogramWidth, croppedAngiogramHeight);
+
+                // cut the angiograms relevant part
+                for (int i = rectangleStartY; i < rectangleStartY + croppedAngiogramHeight; ++i)
+                {
+                    for (int j = rectangleStartX; j < rectangleStartX + croppedAngiogramWidth; ++j)
+                    {
+                        croppedAngiogram.SetPixel(j - rectangleStartX, i - rectangleStartY, angiogramBW!.GetPixel(j, i));
+                    }
+                }
+
+                return croppedAngiogram;
+            }
+
+            return null;
         }
 
         private void Remove_selection_click(object sender, RoutedEventArgs e)
         {
             Remove_selection();
+
+            if (angiogramDensity != null)
+            {
+                lblResult.Content = angiogramDensity.ToString();
+            }
         }
 
         private void Remove_selection()
@@ -200,6 +199,7 @@ namespace ProjektV
             {
                 mainCanvas.Children.Remove(currRectangle);
             }
+            currRectangle = null;
         }
 
         private void Density_calculation_click(object sender, RoutedEventArgs e)
@@ -211,12 +211,24 @@ namespace ProjektV
             }
 
             // Calculate only selected area
-            if (currRectangle != null)
+            Bitmap? angiogramForCalculation = Get_CroppedAngiogram_By_Selection();
+
+            if (angiogramForCalculation == null)
             {
+                angiogramForCalculation = angiogramBW;
             }
 
-            lblResult.Content = SharedFunctions.Density_Calculation(angiogramBW);
+            double result = SharedFunctions.Density_Calculation(angiogramForCalculation);
 
+            if (angiogramForCalculation == angiogramBW)
+            {
+                lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + " %";
+                angiogramDensity = lblResult.Content.ToString();
+            }
+            else
+            {
+                lblResult.Content = "Hustota krevního řečiště vyznačené oblasti: " + result.ToString("N2") + " %";
+            }
             lblResult.Visibility = Visibility.Visible;
             lblSegmentation.Visibility = Visibility.Visible;
             btnSegmentation.Visibility = Visibility.Visible;
