@@ -84,6 +84,8 @@ namespace ProjektV
             // Get the mouse click position relative to the Image control
             System.Windows.Point clickPoint = e.GetPosition(mainCanvas);
 
+            MessageBox.Show(GetColorFromBorderBrush().ToString());
+
             // Calculate the rectangle coordinates with the mouse click as the center
             double rectangleWidth = 100;
             double rectangleHeight = 100;
@@ -243,30 +245,6 @@ namespace ProjektV
             angiogramDisplay.Source = angiogramImageSource;
         }
 
-        private System.Drawing.Color GetPixelColor(CroppedBitmap croppedBitmap, int x, int y)
-        {
-            // Define the size of the array based on the cropped bitmap dimensions
-            int stride = croppedBitmap.PixelWidth * (croppedBitmap.Format.BitsPerPixel / 8);
-            byte[] pixelData = new byte[stride * croppedBitmap.PixelHeight];
-
-            // Copy pixel data from the cropped bitmap to the array
-            croppedBitmap.CopyPixels(pixelData, stride, 0);
-
-            // Calculate the index of the desired pixel in the array
-            int index = y * stride + x * (croppedBitmap.Format.BitsPerPixel / 8);
-
-            // Extract color components from the array
-            byte blue = pixelData[index];
-            byte green = pixelData[index + 1];
-            byte red = pixelData[index + 2];
-            byte alpha = pixelData[index + 3];
-
-            // Create a Color object from the components
-            System.Drawing.Color pixelColor = System.Drawing.Color.FromArgb(alpha, red, green, blue);
-
-            return pixelColor;
-        }
-
         private void Export_button_click(object sender, RoutedEventArgs e)
         {
             SaveFileDialog dlg = new SaveFileDialog();
@@ -280,54 +258,52 @@ namespace ProjektV
 
             // Show save file dialog box
             bool? result = dlg.ShowDialog();
-            string path = "";
 
             // Process save file dialog box results
-            if (result == true)
-            {
-                // Save document
-                path = dlg.FileName;
-            }
-            else
+            if (result == false)
             {
                 return;
             }
 
             // Create a Graphics object from the image
-
             Bitmap outputImage = Determine_Bitmap_From_ImageSource();
 
-            outputImage = AddWhiteLayers(outputImage);
-
-            using (Graphics graphics = Graphics.FromImage(outputImage))
+            if (currRectangle != null)
             {
-                // Set the font and brush for the text
-                Font font = new Font("Arial", 14);
-                SolidBrush brush = new SolidBrush(System.Drawing.Color.Black);
+                outputImage = AddBorder(outputImage);
+                outputImage = DrawSelection(outputImage);
+            }
 
-                // Set the position where you want to place the text
-                float x = 115;
-                float y = 10;
-
-                // Set any other options (e.g., quality, smoothing, etc.)
-                graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-                // Draw the text onto the image
-                graphics.DrawString(lblResult.Content.ToString(), font, brush, x, y);
-
-                // Save the image with the text
-                string selectedExtension = System.IO.Path.GetExtension(dlg.FileName).ToLower();
-                if (selectedExtension == ".png")
+            if (angiogramDensity != null)
+            {
+                outputImage = AddWhiteLayers(outputImage);
+                using (Graphics graphics = Graphics.FromImage(outputImage))
                 {
-                    outputImage.Save(path, ImageFormat.Png);
-                }
-                else
-                {
-                    outputImage.Save(path, ImageFormat.Tiff);
+                    // Set the font and brush for the text
+                    Font font = new Font("Arial", 14);
+                    SolidBrush brush = new SolidBrush(System.Drawing.Color.Black);
+
+                    // Set the position where you want to place the text
+                    float x = 115;
+                    float y = 10;
+
+                    // Set any other options (e.g., quality, smoothing, etc.)
+                    graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                    // Draw the text onto the image
+                    graphics.DrawString(lblResult.Content.ToString(), font, brush, x, y);
+
+                    SharedFunctions.SaveBitmapImage(outputImage, dlg);
                 }
             }
+            else
+            {
+                SharedFunctions.SaveBitmapImage(outputImage, dlg);
+            }
             outputImage.Dispose();
+
         }
+
         private Bitmap Determine_Bitmap_From_ImageSource()
         {
             if (angiogramDisplay.Source == angiogramBWImageSource)
@@ -337,26 +313,98 @@ namespace ProjektV
             return angiogram;
         }
 
+        private Bitmap AddBorder(Bitmap outputImage)
+        {
+            int leftThickness = (int)borderMain.BorderThickness.Left;
+            int rightThickness = (int)borderMain.BorderThickness.Right;
+            int topThickness = (int)borderMain.BorderThickness.Top;
+            int bottomThickness = (int)borderMain.BorderThickness.Bottom;
+
+
+            Bitmap outputImageWithBorder = new Bitmap(outputImage.Width + leftThickness + rightThickness, outputImage.Height + topThickness + bottomThickness);
+
+            System.Drawing.Color borderColor = GetColorFromBorderBrush();
+
+            for (int i = 0; i < outputImageWithBorder.Height; ++i)
+            {
+                for (int j = 0; j < outputImageWithBorder.Width; ++j)
+                {
+                    if (i < topThickness || i >= outputImageWithBorder.Height - bottomThickness || j < leftThickness || j >= outputImageWithBorder.Width - rightThickness)   
+                    {
+                        outputImageWithBorder.SetPixel(j, i, borderColor);
+                    }
+                    else
+                    {
+                        outputImageWithBorder.SetPixel(j, i, outputImage.GetPixel(j - leftThickness, i - topThickness));
+                    }
+                }
+            }
+            return outputImageWithBorder;
+        }
+
+        private System.Drawing.Color GetColorFromBorderBrush()
+        {
+            // Get the BorderBrush color from the Border element
+            System.Windows.Media.Brush borderBrush = borderMain.BorderBrush;
+
+            // Convert the BorderBrush color to a SolidColorBrush (assuming it's a SolidColorBrush)
+            SolidColorBrush solidColorBrush = (SolidColorBrush)borderBrush;
+
+            // Convert the SolidColorBrush color to a System.Windows.Media.Color
+            System.Windows.Media.Color mediaColor = solidColorBrush.Color;
+
+            // Convert the System.Windows.Media.Color to a System.Drawing.Color
+            System.Drawing.Color drawingColor = System.Drawing.Color.FromArgb(mediaColor.A, mediaColor.R, mediaColor.G, mediaColor.B);
+
+            // Now you can use drawingColor with outputImageWithBorder.SetPixel(j, i, drawingColor)
+            return drawingColor;
+
+        }
+
         private Bitmap AddWhiteLayers(Bitmap outputImage)
         {
-            Bitmap outputImageWithLayers = new Bitmap(outputImage.Width, outputImage.Height + 40);
+            int WHITE_LAYERS_HEIGHT = 40;
+
+            Bitmap outputImageWithLayers = new Bitmap(outputImage.Width, outputImage.Height + WHITE_LAYERS_HEIGHT);
 
             for (int i = 0; i < outputImageWithLayers.Height; ++i)
             {
                 for (int j = 0; j < outputImageWithLayers.Width; ++j)
                 {
-                    if (i < 40)
+                    if (i < WHITE_LAYERS_HEIGHT)
                     {
                         outputImageWithLayers.SetPixel(j, i, System.Drawing.Color.White);
                     }
                     else
                     {
-                        outputImageWithLayers.SetPixel(j, i, outputImage.GetPixel(j,i-40));
+                        outputImageWithLayers.SetPixel(j, i, outputImage.GetPixel(j, i - WHITE_LAYERS_HEIGHT));
                     }
                 }
             }
 
             return outputImageWithLayers;
+        }
+
+        private Bitmap DrawSelection(Bitmap outputImage)
+        {
+            Bitmap outputImageWithSelection = new Bitmap(outputImage);
+
+            for (int i = 0; i < outputImageWithSelection.Height; ++i)
+            {
+                for (int j = 0; j < outputImageWithSelection.Width; ++j)
+                {
+                    if (i < 40)
+                    {
+                       // outputImageWithLayers.SetPixel(j, i, System.Drawing.Color.White);
+                    }
+                    else
+                    {
+                        //outputImageWithLayers.SetPixel(j, i, outputImage.GetPixel(j, i - 40));
+                    }
+                }
+            }
+
+            return outputImageWithSelection;
         }
 
         private BitmapSource ConvertCroppedBitmapToBitmapSourceWithRows(CroppedBitmap croppedBitmap, int additionalRows, string text)

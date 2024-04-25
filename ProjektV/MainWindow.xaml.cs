@@ -24,6 +24,7 @@ using System.Xml.Linq;
 using System.ComponentModel;
 using Windows.Services.Maps.LocalSearch;
 using MS.WindowsAPICodePack.Internal;
+using Windows.Graphics.Printing3D;
 
 namespace ProjektV
 {
@@ -150,15 +151,9 @@ namespace ProjektV
 
             // Show save file dialog box
             bool? result = dlg.ShowDialog();
-            string path = "";
 
             // Process save file dialog box results
-            if (result == true)
-            {
-                // Save document
-                path = dlg.FileName;
-            }
-            else
+            if (result == false)
             {
                 return;
             }
@@ -184,15 +179,7 @@ namespace ProjektV
                 graphics.DrawString(lblResult.Content.ToString(), font, brush, x, y);
 
                 // Save the image with the text
-                string selectedExtension = System.IO.Path.GetExtension(dlg.FileName).ToLower();
-                if (selectedExtension == ".png")
-                {
-                    outputImage.Save(path, ImageFormat.Png);
-                }
-                else
-                {
-                    outputImage.Save(path, ImageFormat.Tiff);
-                }
+                SharedFunctions.SaveBitmapImage(outputImage, dlg);
             }
         }
 
@@ -241,6 +228,18 @@ namespace ProjektV
     }
     public static class SharedFunctions
     {
+        public static void SaveBitmapImage(Bitmap outputImage, SaveFileDialog dlg)
+        {
+            if (System.IO.Path.GetExtension(dlg.FileName).ToLower() == ".png")
+            {
+                outputImage.Save(dlg.FileName, ImageFormat.Png);
+            }
+            else
+            {
+                outputImage.Save(dlg.FileName, ImageFormat.Tiff);
+            }
+        }
+
         private static int Return_Number_Of_Pixels_Of_Value(Bitmap img, int value)
         {
             int result = 0;
