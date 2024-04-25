@@ -145,11 +145,11 @@ namespace ProjektV
             dlg.Filter = "Podporované obrazové formáty (PNG, TIFF) | *.png;*.tif;*.tiff"; ; // Filter files by extension
 
             // Hook up the FileOk event handler
-            dlg.FileOk += SaveFileDialog_FileOk!;
+            dlg.FileOk += SharedFunctions.SaveFileDialog_FileOk!;
 
 
             // Show save file dialog box
-            Nullable<bool> result = dlg.ShowDialog();
+            bool? result = dlg.ShowDialog();
             string path = "";
 
             // Process save file dialog box results
@@ -203,20 +203,6 @@ namespace ProjektV
                 return angiogramFullImage!;
             }
             return angiogramBWFullImage!;
-        }
-
-        private void SaveFileDialog_FileOk(object sender, CancelEventArgs e)
-        {
-            SaveFileDialog? dlg = sender as SaveFileDialog;
-            if (dlg != null)
-            {
-                string selectedExtension = System.IO.Path.GetExtension(dlg.FileName).ToLower();
-                if (selectedExtension != ".png" && selectedExtension != ".tif" && selectedExtension != ".tiff")
-                {
-                    MessageBox.Show("Neplatný typ souboru. Vyberte prosím soubor s příponou PNG nebo TIFF.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
-                    e.Cancel = true; // Cancel the file dialog
-                }
-            }
         }
 
         private void Editor_Button_Click(object sender, RoutedEventArgs e)
@@ -372,5 +358,20 @@ namespace ProjektV
 
             return binaryImage;
         }
+
+        public static void SaveFileDialog_FileOk(object sender, CancelEventArgs e)
+        {
+            SaveFileDialog? dlg = sender as SaveFileDialog;
+            if (dlg != null)
+            {
+                string selectedExtension = System.IO.Path.GetExtension(dlg.FileName).ToLower();
+                if (selectedExtension != ".png" && selectedExtension != ".tif" && selectedExtension != ".tiff")
+                {
+                    MessageBox.Show("Neplatný typ souboru. Vyberte prosím soubor s příponou PNG nebo TIFF.", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
+                    e.Cancel = true; // Cancel the file dialog
+                }
+            }
+        }
+
     }
 }

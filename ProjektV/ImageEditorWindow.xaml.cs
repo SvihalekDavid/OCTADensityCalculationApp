@@ -272,10 +272,14 @@ namespace ProjektV
             SaveFileDialog dlg = new SaveFileDialog();
             dlg.FileName = "Document"; // Default file name
             dlg.DefaultExt = ".png"; // Default file extension
-            dlg.Filter = "PNG Files (*.png)|*.png"; // Filter files by extension
+            dlg.Filter = "Podporované obrazové formáty (PNG, TIFF) | *.png;*.tif;*.tiff"; ; // Filter files by extension
+
+            // Hook up the FileOk event handler
+            dlg.FileOk += SharedFunctions.SaveFileDialog_FileOk!;
+
 
             // Show save file dialog box
-            Nullable<bool> result = dlg.ShowDialog();
+            bool? result = dlg.ShowDialog();
             string path = "";
 
             // Process save file dialog box results
@@ -289,21 +293,70 @@ namespace ProjektV
                 return;
             }
 
-            // Create a PngBitmapEncoder
-            PngBitmapEncoder encoder = new PngBitmapEncoder();
+            // Create a Graphics object from the image
 
-            // Convert CroppedBitmap to BitmapSource with additional rows
-            string txt = lblResult.Content.ToString();
-            //BitmapSource bitmapWithRows = ConvertCroppedBitmapToBitmapSourceWithRows(currCroppedBitmap, 30, txt.Substring(25));
+            Bitmap outputImage = Determine_Bitmap_From_ImageSource();
 
-            // Add the BitmapSource to the encoder
-            //encoder.Frames.Add(BitmapFrame.Create(bitmapWithRows));
+            outputImage = AddWhiteLayers(outputImage);
 
-            // Save the encoder to the specified path
-            using (FileStream stream = new FileStream(path, FileMode.Create))
+            using (Graphics graphics = Graphics.FromImage(outputImage))
             {
-                encoder.Save(stream);
+                // Set the font and brush for the text
+                Font font = new Font("Arial", 14);
+                SolidBrush brush = new SolidBrush(System.Drawing.Color.Black);
+
+                // Set the position where you want to place the text
+                float x = 115;
+                float y = 10;
+
+                // Set any other options (e.g., quality, smoothing, etc.)
+                graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                // Draw the text onto the image
+                graphics.DrawString(lblResult.Content.ToString(), font, brush, x, y);
+
+                // Save the image with the text
+                string selectedExtension = System.IO.Path.GetExtension(dlg.FileName).ToLower();
+                if (selectedExtension == ".png")
+                {
+                    outputImage.Save(path, ImageFormat.Png);
+                }
+                else
+                {
+                    outputImage.Save(path, ImageFormat.Tiff);
+                }
             }
+            outputImage.Dispose();
+        }
+        private Bitmap Determine_Bitmap_From_ImageSource()
+        {
+            if (angiogramDisplay.Source == angiogramBWImageSource)
+            {
+                return angiogramBW!;
+            }
+            return angiogram;
+        }
+
+        private Bitmap AddWhiteLayers(Bitmap outputImage)
+        {
+            Bitmap outputImageWithLayers = new Bitmap(outputImage.Width, outputImage.Height + 40);
+
+            for (int i = 0; i < outputImageWithLayers.Height; ++i)
+            {
+                for (int j = 0; j < outputImageWithLayers.Width; ++j)
+                {
+                    if (i < 40)
+                    {
+                        outputImageWithLayers.SetPixel(j, i, System.Drawing.Color.White);
+                    }
+                    else
+                    {
+                        outputImageWithLayers.SetPixel(j, i, outputImage.GetPixel(j,i-40));
+                    }
+                }
+            }
+
+            return outputImageWithLayers;
         }
 
         private BitmapSource ConvertCroppedBitmapToBitmapSourceWithRows(CroppedBitmap croppedBitmap, int additionalRows, string text)
