@@ -42,7 +42,6 @@ namespace ProjektV
 
             return result;
         }
-
         public static double Density_Calculation(Bitmap imgBW)
         {
             // Counting white pixels in the binary image
@@ -139,7 +138,6 @@ namespace ProjektV
                     }
                 }
             }
-
             return binaryImage;
         }
 

@@ -34,7 +34,8 @@ namespace ProjektV
         Bitmap? angiogramBW;
         ImageSource? angiogramBWImageSource;
         System.Windows.Shapes.Rectangle? currRectangle;
-        string? angiogramDensity;
+        string? angiogramWholeAreaDensity;
+        bool isLastDensityCalculationCorrect = false;
 
         public ImageEditorWindow(Bitmap angiogram, ImageSource angiogramImageSource, Bitmap? angiogramBW, ImageSource? angiogramBWImageSource, bool isBWOn, string result)
         {
@@ -64,7 +65,7 @@ namespace ProjektV
                 if (angiogramBW != null)
                 {
                     lblResult.Content = result;
-                    angiogramDensity = result;
+                    angiogramWholeAreaDensity = result;
                     lblResult.Visibility = Visibility.Visible;
                     lblSegmentation.Visibility = Visibility.Visible;
                     btnSegmentation.Visibility = Visibility.Visible;
@@ -114,6 +115,9 @@ namespace ProjektV
 
             // Add the red rectangle to the Canvas
             mainCanvas.Children.Add(currRectangle);
+
+            // need a new density calculation for correct export
+            isLastDensityCalculationCorrect = false;    
         }
 
         private double Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(double startCoordinate, double maxCoordinateValue, double rectangleCoordinateSize)
@@ -187,9 +191,10 @@ namespace ProjektV
         {
             Remove_selection();
 
-            if (angiogramDensity != null)
+            if (angiogramWholeAreaDensity != null)
             {
-                lblResult.Content = angiogramDensity.ToString();
+                lblResult.Content = angiogramWholeAreaDensity.ToString();
+                isLastDensityCalculationCorrect = true;
             }
         }
 
@@ -222,13 +227,15 @@ namespace ProjektV
 
             if (angiogramForCalculation == angiogramBW)
             {
-                lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + " %";
-                angiogramDensity = lblResult.Content.ToString();
+                lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + "%";
+                angiogramWholeAreaDensity = lblResult.Content.ToString();
             }
             else
             {
-                lblResult.Content = "Hustota krevního řečiště vyznačené oblasti: " + result.ToString("N2") + " %";
+                lblResult.Content = "Hustota krevního řečiště vyznačené oblasti: " + result.ToString("N2") + "%";
             }
+
+            isLastDensityCalculationCorrect = true;
             lblResult.Visibility = Visibility.Visible;
             lblSegmentation.Visibility = Visibility.Visible;
             btnSegmentation.Visibility = Visibility.Visible;
@@ -264,21 +271,26 @@ namespace ProjektV
             }
 
             // Create a Graphics object from the image
-            Bitmap outputImage = Determine_Bitmap_From_ImageSource();
+            Bitmap outputImage = new Bitmap(Determine_Bitmap_From_ImageSource());
 
             if (currRectangle != null)
             {
+                // Get rectangles parameters and modify them for the DrawRectangle function, which displays rectangles differently than canvas
+                int rectangleStrokeThickness = (int)Math.Floor(currRectangle.StrokeThickness);
+                int rectagnleWidth = (int)Math.Floor(currRectangle.Width) - rectangleStrokeThickness;
+                int rectangleHeight = (int)Math.Floor(currRectangle.Height) - rectangleStrokeThickness;
+                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currRectangle)) + 1;
+                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currRectangle)) + 1;
+
                 outputImage = AddBorder(outputImage);
 
-                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currRectangle));
-                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currRectangle));
-                int rectangleEndX = (int)Math.Floor(currRectangle.Width) + rectangleStartX - 1;
-                int rectangleEndY = (int)Math.Floor(currRectangle.Height) + rectangleStartY - 1;
-
-                outputImage = DrawSelection(outputImage, currRectangle, rectangleStartX, rectangleStartY, rectangleEndX, rectangleEndY);
+                using (Graphics graphics = Graphics.FromImage(outputImage))
+                {
+                    graphics.DrawRectangle(new System.Drawing.Pen(GetColorFromBorderBrush(currRectangle.Stroke), rectangleStrokeThickness), rectangleStartX, rectangleStartY, rectagnleWidth, rectangleHeight);
+                }
             }
 
-            if (angiogramDensity != null)
+            if (isLastDensityCalculationCorrect)
             {
                 outputImage = AddWhiteLayers(outputImage);
                 using (Graphics graphics = Graphics.FromImage(outputImage))
@@ -289,6 +301,10 @@ namespace ProjektV
 
                     // Set the position where you want to place the text
                     float x = 115;
+                    if (currRectangle != null)
+                    {
+                        x = 30;
+                    }
                     float y = 10;
 
                     // Set any other options (e.g., quality, smoothing, etc.)
@@ -406,15 +422,6 @@ namespace ProjektV
                 }
             }
             return outputImageWithSelection;
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            Bitmap frangi = SharedFunctions.Apply(angiogram);
-
-            ImageSource f = SharedFunctions.ImageSourceFromBitmap(frangi);
-
-            angiogramDisplay.Source = f;
         }
     }
 }

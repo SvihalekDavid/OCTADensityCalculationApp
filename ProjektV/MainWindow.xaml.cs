@@ -105,7 +105,7 @@ namespace ProjektV
             angiogramBWImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramBW);
             angiogramBWFullImageImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramBWFullImage!);
 
-            lblResult.Content = "Hustota krevního řečiště: " + SharedFunctions.Density_Calculation(angiogramBW).ToString("N2") + " %";
+            lblResult.Content = "Hustota krevního řečiště: " + SharedFunctions.Density_Calculation(angiogramBW).ToString("N2") + "%";
 
             lblResult.Visibility = Visibility.Visible;
             lblSegmentation.Visibility = Visibility.Visible;
