@@ -84,8 +84,6 @@ namespace ProjektV
             // Get the mouse click position relative to the Image control
             System.Windows.Point clickPoint = e.GetPosition(mainCanvas);
 
-            MessageBox.Show(GetColorFromBorderBrush().ToString());
-
             // Calculate the rectangle coordinates with the mouse click as the center
             double rectangleWidth = 100;
             double rectangleHeight = 100;
@@ -271,7 +269,13 @@ namespace ProjektV
             if (currRectangle != null)
             {
                 outputImage = AddBorder(outputImage);
-                outputImage = DrawSelection(outputImage);
+
+                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currRectangle));
+                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currRectangle));
+                int rectangleEndX = (int)Math.Floor(currRectangle.Width) + rectangleStartX - 1;
+                int rectangleEndY = (int)Math.Floor(currRectangle.Height) + rectangleStartY - 1;
+
+                outputImage = DrawSelection(outputImage, currRectangle, rectangleStartX, rectangleStartY, rectangleEndX, rectangleEndY);
             }
 
             if (angiogramDensity != null)
@@ -323,7 +327,7 @@ namespace ProjektV
 
             Bitmap outputImageWithBorder = new Bitmap(outputImage.Width + leftThickness + rightThickness, outputImage.Height + topThickness + bottomThickness);
 
-            System.Drawing.Color borderColor = GetColorFromBorderBrush();
+            System.Drawing.Color borderColor = GetColorFromBorderBrush(borderMain.BorderBrush);
 
             for (int i = 0; i < outputImageWithBorder.Height; ++i)
             {
@@ -342,11 +346,8 @@ namespace ProjektV
             return outputImageWithBorder;
         }
 
-        private System.Drawing.Color GetColorFromBorderBrush()
+        private System.Drawing.Color GetColorFromBorderBrush(System.Windows.Media.Brush borderBrush)
         {
-            // Get the BorderBrush color from the Border element
-            System.Windows.Media.Brush borderBrush = borderMain.BorderBrush;
-
             // Convert the BorderBrush color to a SolidColorBrush (assuming it's a SolidColorBrush)
             SolidColorBrush solidColorBrush = (SolidColorBrush)borderBrush;
 
@@ -358,7 +359,6 @@ namespace ProjektV
 
             // Now you can use drawingColor with outputImageWithBorder.SetPixel(j, i, drawingColor)
             return drawingColor;
-
         }
 
         private Bitmap AddWhiteLayers(Bitmap outputImage)
@@ -385,7 +385,7 @@ namespace ProjektV
             return outputImageWithLayers;
         }
 
-        private Bitmap DrawSelection(Bitmap outputImage)
+        private Bitmap DrawSelection(Bitmap outputImage, System.Windows.Shapes.Rectangle selection, int selectionStartX, int selectionStartY, int selectionEndX, int selectionEndY)
         {
             Bitmap outputImageWithSelection = new Bitmap(outputImage);
 
@@ -393,50 +393,28 @@ namespace ProjektV
             {
                 for (int j = 0; j < outputImageWithSelection.Width; ++j)
                 {
-                    if (i < 40)
+                    if (((i >= selectionStartY && i <= selectionStartY + selection.StrokeThickness) || (i >= selectionEndY && i <= selectionEndY - selection.StrokeThickness)) 
+                        && (j >= selectionStartX && j <= selectionEndX) ||
+                        (j == selectionStartX || j == selectionEndX) && (i >= selectionStartY && i <= selectionEndY))
                     {
-                       // outputImageWithLayers.SetPixel(j, i, System.Drawing.Color.White);
+                        outputImageWithSelection.SetPixel(j, i, GetColorFromBorderBrush(selection.Stroke));
                     }
                     else
                     {
-                        //outputImageWithLayers.SetPixel(j, i, outputImage.GetPixel(j, i - 40));
+                        outputImageWithSelection.SetPixel(j, i, outputImage.GetPixel(j, i));
                     }
                 }
             }
-
             return outputImageWithSelection;
         }
 
-        private BitmapSource ConvertCroppedBitmapToBitmapSourceWithRows(CroppedBitmap croppedBitmap, int additionalRows, string text)
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
-            // Create a DrawingVisual and set its properties
-            DrawingVisual drawingVisual = new DrawingVisual();
+            Bitmap frangi = SharedFunctions.Apply(angiogram);
 
-            using (DrawingContext drawingContext = drawingVisual.RenderOpen())
-            {
-                // Draw the original CroppedBitmap
-                drawingContext.DrawImage(croppedBitmap, new Rect(0, additionalRows, croppedBitmap.PixelWidth, croppedBitmap.PixelHeight));
+            ImageSource f = SharedFunctions.ImageSourceFromBitmap(frangi);
 
-                // Draw text on the image
-                Typeface typeface = new Typeface(new System.Windows.Media.FontFamily("Arial"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
-                FormattedText formattedText = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, 14, System.Windows.Media.Brushes.Black);
-                drawingContext.DrawText(formattedText, new System.Windows.Point(23, 12));
-            }
-
-            // Convert the DrawingVisual to a RenderTargetBitmap
-            RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(
-                croppedBitmap.PixelWidth,
-                croppedBitmap.PixelHeight + additionalRows,
-                croppedBitmap.DpiX,
-                croppedBitmap.DpiY,
-                PixelFormats.Pbgra32);
-
-            renderTargetBitmap.Render(drawingVisual);
-
-            // Set the RenderTargetBitmap as the source for img1
-            angiogramDisplay.Source = renderTargetBitmap;
-
-            return renderTargetBitmap;
+            angiogramDisplay.Source = f;
         }
     }
 }
