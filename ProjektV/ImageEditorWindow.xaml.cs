@@ -36,10 +36,13 @@ namespace ProjektV
         System.Windows.Shapes.Rectangle? currRectangle;
         string? angiogramWholeAreaDensity;
         bool isLastDensityCalculationCorrect = false;
+        int threshold = 0;
 
-        public ImageEditorWindow(Bitmap angiogram, ImageSource angiogramImageSource, Bitmap? angiogramBW, ImageSource? angiogramBWImageSource, bool isBWOn, string result)
+        public ImageEditorWindow(Bitmap angiogram, ImageSource angiogramImageSource, Bitmap? angiogramBW, ImageSource? angiogramBWImageSource, bool isBWOn, string result, int threshold)
         {
             InitializeComponent();
+            sliderThreshold.Value = threshold;
+            lblThreshold.Content = threshold;
             lblResult.Visibility = Visibility.Hidden;
             lblSegmentation.Visibility = Visibility.Hidden;
             btnSegmentation.Visibility = Visibility.Hidden;
@@ -49,6 +52,7 @@ namespace ProjektV
                 this.angiogramImageSource = angiogramImageSource;
                 this.angiogramBW = angiogramBW;
                 this.angiogramBWImageSource = angiogramBWImageSource;
+                this.threshold = threshold;
 
                 if (isBWOn)
                 {
@@ -211,8 +215,11 @@ namespace ProjektV
         {
             if (angiogramBW == null)
             {
-                angiogramBW = SharedFunctions.Otsu_Thresholding(angiogram);
+                threshold = SharedFunctions.Otsu_Thresholding(angiogram);
+                angiogramBW = SharedFunctions.Binarize_Image_By_Threshold(angiogram, threshold);
                 angiogramBWImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramBW);
+                sliderThreshold.Value = threshold;
+                lblThreshold.Content = threshold;
             }
 
             // Calculate only selected area
@@ -401,27 +408,21 @@ namespace ProjektV
             return outputImageWithLayers;
         }
 
-        private Bitmap DrawSelection(Bitmap outputImage, System.Windows.Shapes.Rectangle selection, int selectionStartX, int selectionStartY, int selectionEndX, int selectionEndY)
+        private void sliderThreshold_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-            Bitmap outputImageWithSelection = new Bitmap(outputImage);
-
-            for (int i = 0; i < outputImageWithSelection.Height; ++i)
+            // Not chaning value case
+            if (angiogramDisplay.Source == angiogramImageSource)
             {
-                for (int j = 0; j < outputImageWithSelection.Width; ++j)
-                {
-                    if (((i >= selectionStartY && i <= selectionStartY + selection.StrokeThickness) || (i >= selectionEndY && i <= selectionEndY - selection.StrokeThickness)) 
-                        && (j >= selectionStartX && j <= selectionEndX) ||
-                        (j == selectionStartX || j == selectionEndX) && (i >= selectionStartY && i <= selectionEndY))
-                    {
-                        outputImageWithSelection.SetPixel(j, i, GetColorFromBorderBrush(selection.Stroke));
-                    }
-                    else
-                    {
-                        outputImageWithSelection.SetPixel(j, i, outputImage.GetPixel(j, i));
-                    }
-                }
+                MessageBox.Show("Prahovou hodnotu segmentace lze měnit pouze při zobrazeném segmentovaném angiogramu.");
+                sliderThreshold.Value = threshold;
+                lblThreshold.Content = threshold; 
+                return;
             }
-            return outputImageWithSelection;
+
+            Bitmap angiogramWithChangedThreshold = SharedFunctions.Binarize_Image_By_Threshold(angiogram, (int)sliderThreshold.Value);
+            ImageSource angiogramWithChangedThresholdImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramWithChangedThreshold);
+            angiogramDisplay.Source = angiogramWithChangedThresholdImageSource;
+            lblThreshold.Content = (int)sliderThreshold.Value;
         }
     }
 }

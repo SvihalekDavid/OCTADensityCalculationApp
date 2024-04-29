@@ -67,7 +67,7 @@ namespace ProjektV
             finally { DeleteObject(handle); }
         }
 
-        public static Bitmap Otsu_Thresholding(Bitmap image)
+        public static int Otsu_Thresholding(Bitmap image)
         {
             // Compute histogram
             int[] histogram = new int[256];
@@ -121,7 +121,11 @@ namespace ProjektV
                 }
             }
 
-            // Create binary image using the threshold
+            return threshold;
+        }
+        // Create binary image using the threshold
+        public static Bitmap Binarize_Image_By_Threshold(Bitmap image, int threshold)
+        {
             Bitmap binaryImage = new Bitmap(image.Width, image.Height);
 
             for (int i = 0; i < image.Height; i++)

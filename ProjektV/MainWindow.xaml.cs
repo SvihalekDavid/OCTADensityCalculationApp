@@ -21,6 +21,7 @@ namespace ProjektV
         Bitmap? angiogram, angiogramFullImage, angiogramBW, angiogramBWFullImage;
         ImageSource? angiogramImageSource, angiogramFullImageImageSource, angiogramBWImageSource, angiogramBWFullImageImageSource;
         bool wasFileSelected = false;
+        int threshold = -1;
         public MainWindow()
         {
             InitializeComponent();
@@ -98,7 +99,8 @@ namespace ProjektV
             }
 
             // Otsu's thresholding to convert the image to binary
-            angiogramBW = SharedFunctions.Otsu_Thresholding(angiogram!);
+            threshold = SharedFunctions.Otsu_Thresholding(angiogram!);
+            angiogramBW = SharedFunctions.Binarize_Image_By_Threshold(angiogram!, threshold);
 
             // Create a new viewable binarized angiogram
             Create_AngiogramFull_From_AngiogramBW();
@@ -183,7 +185,7 @@ namespace ProjektV
                 MessageBox.Show("Nebyl vybrán žádný soubor");
                 return;
             }
-            ImageEditorWindow editorWindow = new ImageEditorWindow(angiogram!, angiogramImageSource!, angiogramBW, angiogramBWImageSource, imageMain.Source == angiogramBWFullImageImageSource, lblResult.Content.ToString()!);
+            ImageEditorWindow editorWindow = new ImageEditorWindow(angiogram!, angiogramImageSource!, angiogramBW, angiogramBWImageSource, imageMain.Source == angiogramBWFullImageImageSource, lblResult.Content.ToString()!, threshold);
             editorWindow.ShowDialog();
         }
 
