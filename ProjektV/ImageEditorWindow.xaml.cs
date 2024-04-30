@@ -137,33 +137,6 @@ namespace ProjektV
             return startCoordinate;
         }
 
-        private void Zoom_button_click(object sender, RoutedEventArgs e)
-        {
-            if (currRectangle != null)
-            {
-                int croppedAngiogramWidth = (int)Math.Floor(currRectangle.Width - (2 * currRectangle.StrokeThickness));
-                int croppedAngiogramHeight = (int)Math.Floor(currRectangle.Height - (2 * currRectangle.StrokeThickness));
-
-                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currRectangle));
-                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currRectangle));
-
-                Bitmap croppedAngiogram = new Bitmap(croppedAngiogramWidth, croppedAngiogramHeight);
-
-                // cut the angiograms relevant part
-                for (int i = rectangleStartY; i < rectangleStartY + croppedAngiogramHeight; ++i)
-                {
-                    for (int j = rectangleStartX; j < rectangleStartX + croppedAngiogramWidth; ++j)
-                    {
-                        croppedAngiogram.SetPixel(j - rectangleStartX, i - rectangleStartY, angiogram.GetPixel(j, i));
-                    }
-                }
-                ImageSource croppedAngiogramImageSource = SharedFunctions.ImageSourceFromBitmap(croppedAngiogram);
-                angiogramDisplay.Source = croppedAngiogramImageSource;
-                angiogramDisplay.Width = angiogram.Width;
-                angiogramDisplay.Height = angiogram.Height;
-            }
-        }
-
         private Bitmap? Get_CroppedAngiogram_By_Selection()
         {
             if (currRectangle != null)

@@ -45,20 +45,23 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="100"/>
+            <RowDefinition Height="50"/>
         </Grid.RowDefinitions>
-        <Canvas x:Name="mainCanvas" Grid.Row="1" Grid.Column="1" Width="{Binding ActualWidth, ElementName=borderMain}" Height="{Binding ActualHeight, ElementName=borderMain}">
+        <Canvas x:Name="mainCanvas" Grid.Row="0" Grid.Column="1" Width="{Binding ActualWidth, ElementName=borderMain}" Height="{Binding ActualHeight, ElementName=borderMain}">
             <Border x:Name="borderMain" BorderBrush="Cyan" BorderThickness="3">
                 <Viewbox x:Name="imageVb">
                     <Image x:Name="angiogramDisplay"/>
                 </Viewbox>
             </Border>
         </Canvas>
-        <Label x:Name="lblResult" Grid.Row="0" Grid.Column="1" Content="Hustota krevního řečiště: 19.58%" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
-        <StackPanel Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0">
-            <Button Content="Zoom selekce" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Zoom_button_click"/>
+        <Label x:Name="lblResult" Grid.Row="0" Grid.Column="1" Margin="0 -560 0 0" Content="Hustota krevního řečiště: 19.58%" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
+        <StackPanel Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0">
+            <Label Content="Tvar selekce:" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" FontSize="14"/>
+            <StackPanel Orientation="Horizontal">
+                <Button Content="&#9645;" Width="50" Height="50" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
+                <Button Content="◯" Width="50" Height="50" Margin="50,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
+            </StackPanel>
             <Button Content="Zrušit selekci" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Remove_selection_click"/>
             <Button Content="Vypočítat hustotu" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Density_calculation_click"/>
             <Button Content="Exportovat" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Export_button_click"/>
@@ -86,8 +89,8 @@
                 </ToggleButton.Template>
             </ToggleButton>
         </StackPanel>
-        <Slider x:Name="sliderThreshold" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Width="512" Maximum="255" SmallChange="0" Value="0" Thumb.DragCompleted="sliderThreshold_DragCompleted"/>
-        <Label Grid.Row="2" Grid.Column="2" Content="Práh:" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center" Width="38"/>
-        <Label x:Name="lblThreshold" Grid.Row="2" Grid.Column="2" Content="0" HorizontalAlignment="Left" Margin="48,0,0,0" VerticalAlignment="Center" Width="38"/>
+        <Slider x:Name="sliderThreshold" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Width="512" Maximum="255" SmallChange="0" Value="0" Thumb.DragCompleted="sliderThreshold_DragCompleted"/>
+        <Label Grid.Row="1" Grid.Column="2" Content="Práh:" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="38"/>
+        <Label x:Name="lblThreshold" Grid.Row="1" Grid.Column="2" Content="0" HorizontalAlignment="Left" Margin="48,0,0,0" VerticalAlignment="Top" Width="38"/>
     </Grid>
 </Window>
