@@ -80,6 +80,10 @@ namespace ProjektV
             }
             else
             {
+                if (wasFileSelected)
+                {
+                    return;
+                }
                 MessageBox.Show("Nebyl vybrán žádný soubor.");
                 lblNoContent.Visibility = Visibility.Visible;
             }

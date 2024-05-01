@@ -34,9 +34,13 @@ namespace ProjektV
         Bitmap? angiogramBW;
         ImageSource? angiogramBWImageSource;
         System.Windows.Shapes.Rectangle? currRectangle;
+        System.Windows.Shapes.Rectangle? currHandle;
+        Shape? currShape;
+        List<UIElement> handles = new List<UIElement>();
         string? angiogramWholeAreaDensity;
         bool isLastDensityCalculationCorrect = false;
         int threshold = 0;
+        private System.Windows.Point lastMousePos;
 
         public ImageEditorWindow(Bitmap angiogram, ImageSource angiogramImageSource, Bitmap? angiogramBW, ImageSource? angiogramBWImageSource, bool isBWOn, string result, int threshold)
         {
@@ -77,6 +81,8 @@ namespace ProjektV
 
                 // Add the MouseLeftButtonDown event handler to the Image control
                 mainCanvas.MouseLeftButtonDown += mainCanvas_MouseLeftButtonDown;
+                mainCanvas.MouseLeftButtonUp += mainCanvas_MouseLeftButtonUp;
+                mainCanvas.MouseMove += mainCanvas_MouseMove;
             }
             catch (Exception ex)
             {
@@ -86,42 +92,240 @@ namespace ProjektV
 
         private void mainCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            // Get the mouse click position relative to the Image control
-            System.Windows.Point clickPoint = e.GetPosition(mainCanvas);
-
-            // Calculate the rectangle coordinates with the mouse click as the center
-            double rectangleWidth = 100;
-            double rectangleHeight = 100;
-            double rectangleStartX = clickPoint.X - rectangleWidth / 2;
-            double rectangleStartY = clickPoint.Y - rectangleHeight / 2;
-
-            rectangleStartX = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartX, mainCanvas.ActualWidth, rectangleWidth);
-            rectangleStartY = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartY, mainCanvas.ActualHeight, rectangleHeight);
-
-            // Delete existing rectangle
             if (currRectangle != null)
             {
-                mainCanvas.Children.Remove(currRectangle);
+                return;
             }
-
-            // Create a red rectangle
-            currRectangle = new System.Windows.Shapes.Rectangle
+            if (btnRectangleSelection.IsChecked == true)
             {
-                Width = rectangleWidth,
-                Height = rectangleHeight,
-                Stroke = System.Windows.Media.Brushes.Red,
-                StrokeThickness = 3
-            };
+                // Get the mouse click position relative to the Image control
+                System.Windows.Point clickPoint = e.GetPosition(mainCanvas);
 
-            // Set the position of the red rectangle
-            Canvas.SetLeft(currRectangle, rectangleStartX);
-            Canvas.SetTop(currRectangle, rectangleStartY);
+                // Calculate the rectangle coordinates with the mouse click as the center
+                double rectangleWidth = 100;
+                double rectangleHeight = 100;
+                double rectangleStartX = clickPoint.X - rectangleWidth / 2;
+                double rectangleStartY = clickPoint.Y - rectangleHeight / 2;
 
-            // Add the red rectangle to the Canvas
-            mainCanvas.Children.Add(currRectangle);
+                rectangleStartX = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartX, mainCanvas.ActualWidth, rectangleWidth);
+                rectangleStartY = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartY, mainCanvas.ActualHeight, rectangleHeight);
 
-            // need a new density calculation for correct export
-            isLastDensityCalculationCorrect = false;    
+                // Delete existing rectangle
+                if (currRectangle != null)
+                {
+                    mainCanvas.Children.Remove(currRectangle);
+                }
+
+                // Create a red rectangle
+                currRectangle = new System.Windows.Shapes.Rectangle
+                {
+                    Width = rectangleWidth,
+                    Height = rectangleHeight,
+                    Stroke = System.Windows.Media.Brushes.Red,
+                    StrokeThickness = 3
+                };
+
+                // Set the position of the red rectangle
+                Canvas.SetLeft(currRectangle, rectangleStartX);
+                Canvas.SetTop(currRectangle, rectangleStartY);
+
+                // Add the red rectangle to the Canvas
+                mainCanvas.Children.Add(currRectangle);
+
+                AddHandles();
+
+                // need a new density calculation for correct export
+                isLastDensityCalculationCorrect = false;
+            } 
+            else
+            {
+                // Get the mouse click position relative to the Image control
+                System.Windows.Point clickPoint = e.GetPosition(mainCanvas);
+
+                // Calculate the rectangle coordinates with the mouse click as the center
+                double rectangleWidth = 100;
+                double rectangleHeight = 100;
+                double rectangleStartX = clickPoint.X - rectangleWidth / 2;
+                double rectangleStartY = clickPoint.Y - rectangleHeight / 2;
+
+                rectangleStartX = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartX, mainCanvas.ActualWidth, rectangleWidth);
+                rectangleStartY = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartY, mainCanvas.ActualHeight, rectangleHeight);
+
+                // Delete existing rectangle
+                if (currRectangle != null)
+                {
+                    mainCanvas.Children.Remove(currRectangle);
+                }
+
+                // Create a red rectangle
+                currShape = new Ellipse
+                {
+                    Width = rectangleWidth,
+                    Height = rectangleHeight,
+                    Stroke = System.Windows.Media.Brushes.Red,
+                    StrokeThickness = 3
+                };
+
+                // Set the position of the red rectangle
+                Canvas.SetLeft(currShape, rectangleStartX);
+                Canvas.SetTop(currShape, rectangleStartY);
+
+                // Add the red rectangle to the Canvas
+                mainCanvas.Children.Add(currShape);
+
+                AddHandles();
+
+                // need a new density calculation for correct export
+                isLastDensityCalculationCorrect = false;
+            }
+        }
+
+        // Add resize handles
+        private void AddHandles()
+        {
+            if (currRectangle != null)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    System.Windows.Shapes.Rectangle handle = new System.Windows.Shapes.Rectangle
+                    {
+                        Width = 10,
+                        Height = 10,
+                        Fill = System.Windows.Media.Brushes.Green,
+                        Opacity = 0.6,
+                    };
+
+                    handles.Add(handle);
+
+                    // Add mouse event handlers for handle dragging
+                    handle.MouseLeftButtonDown += Handle_MouseLeftButtonDown;
+
+                    double rectangleLeft = Math.Floor(Canvas.GetLeft(currRectangle));
+                    double rectangleTop = Math.Floor(Canvas.GetTop(currRectangle));
+
+                    // Position handles at the corners and edges of the rectangle
+                    switch (i)
+                    {
+                        case 0: // Top
+                            Canvas.SetLeft(handle, rectangleLeft + Math.Floor(currRectangle.Width/2 - handle.Width/2));
+                            Canvas.SetTop(handle, rectangleTop);
+                            handle.Cursor = Cursors.SizeNS;
+                            handle.Tag = "Top";
+                            break;
+                        case 1: // Bottom
+                            Canvas.SetLeft(handle, rectangleLeft + Math.Floor(currRectangle.Width / 2 - handle.Width / 2));
+                            Canvas.SetTop(handle, rectangleTop + currRectangle.Height + 1 - Math.Floor(handle.Height));
+                            handle.Cursor = Cursors.SizeNS;
+                            handle.Tag = "Bottom";
+                            break;
+                        case 2: // Left
+                            Canvas.SetLeft(handle, rectangleLeft);
+                            Canvas.SetTop(handle, rectangleTop + Math.Floor(currRectangle.Height / 2 - handle.Height / 2));
+                            handle.Cursor = Cursors.SizeWE;
+                            handle.Tag = "Left";
+                            break;
+                        case 3: // Right
+                            Canvas.SetLeft(handle, rectangleLeft + currRectangle.Width + 1 - Math.Floor(handle.Width));
+                            Canvas.SetTop(handle, rectangleTop + Math.Floor(currRectangle.Height / 2 - handle.Height / 2));
+                            handle.Cursor = Cursors.SizeWE;
+                            handle.Tag = "Right";
+                            break;
+                    }
+
+                    // Add handle to the canvas
+                    mainCanvas.Children.Add(handle);
+                }
+            }
+        }
+        private void Handle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            lastMousePos = e.GetPosition(mainCanvas);
+            currHandle = (System.Windows.Shapes.Rectangle)sender;
+        }
+
+        private void mainCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            currHandle = null;
+        }
+
+        private void mainCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (currHandle != null)
+            {
+                System.Windows.Point currentMousePos = e.GetPosition(mainCanvas);
+                lblX.Content = currentMousePos.X;
+                lblY.Content = currentMousePos.Y;
+                Vector offset = currentMousePos - lastMousePos;
+
+                switch (currHandle.Tag)
+                {
+                    case "Top": // Top handle
+                        double newTop = Math.Floor(Canvas.GetTop(currRectangle)) + offset.Y;
+                        double newHeight = currRectangle!.Height - offset.Y;
+
+                        if (newHeight > currRectangle.StrokeThickness*2 + 1)
+                        {
+                            if (newTop < 0)
+                            {
+                                currHandle = null;
+                                break;
+                            }
+                            Canvas.SetTop(currRectangle, newTop);
+                            currRectangle.Height = newHeight;
+                            Canvas.SetTop(currHandle, Math.Floor(Canvas.GetTop(currHandle)) + offset.Y);
+                        }
+                        break;
+
+                    case "Bottom": // Bottom handle
+                        double newHeightBottom = currRectangle!.Height + offset.Y;
+
+                        if (newHeightBottom > currRectangle.StrokeThickness*2 + 1)
+                        {
+                            if (Math.Floor(Canvas.GetTop(currRectangle)) + newHeightBottom > mainCanvas.Height)
+                            {
+                                currHandle = null;
+                                break;
+                            }
+                            currRectangle.Height = newHeightBottom;
+                            Canvas.SetTop(currHandle, Canvas.GetTop(currHandle) + offset.Y);
+                        }
+                        break;
+
+                    case "Left": // Left handle
+                        double newLeft = Math.Floor(Canvas.GetLeft(currRectangle)) + offset.X;
+                        double newWidth = currRectangle!.Width - offset.X;
+
+                        if (newWidth > currRectangle.StrokeThickness * 2 + 1)
+                        {
+                            if (newLeft < 0)
+                            {
+                                currHandle = null;
+                                break;
+                            }
+                            Canvas.SetLeft(currRectangle, newLeft);
+                            currRectangle.Width = newWidth;
+                            Canvas.SetLeft(currHandle, Math.Floor(Canvas.GetLeft(currHandle)) + offset.X);
+                        }
+                        break;
+
+                    case "Right": // Right handle
+                        double newWidthRight = currRectangle!.Width + offset.X;
+
+                        if (newWidthRight > currRectangle.StrokeThickness * 2 + 1)
+                        {
+                            if (Math.Floor(Canvas.GetLeft(currRectangle)) + newWidthRight > mainCanvas.Width)
+                            {
+                                currHandle = null;
+                                break;
+                            }
+                            currRectangle.Width = newWidthRight;
+                            Canvas.SetLeft(currHandle, Canvas.GetLeft(currHandle) + offset.X);
+                        }
+                        break;
+                }
+
+                lastMousePos = currentMousePos;
+            }
         }
 
         private double Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(double startCoordinate, double maxCoordinateValue, double rectangleCoordinateSize)
@@ -180,6 +384,10 @@ namespace ProjektV
             if (currRectangle != null)
             {
                 mainCanvas.Children.Remove(currRectangle);
+                foreach (UIElement handle in handles)
+                {
+                    mainCanvas.Children.Remove(handle);
+                }
             }
             currRectangle = null;
         }
@@ -228,6 +436,38 @@ namespace ProjektV
         private void ToggleButton_Unchecked(object sender, RoutedEventArgs e)
         {
             angiogramDisplay.Source = angiogramImageSource;
+        }
+
+        private void btnRectangleSelection_Checked(object sender, RoutedEventArgs e)
+        {
+            if (btnEllipseSelection != null)
+            {
+                btnEllipseSelection.IsChecked = false;
+            }
+        }
+
+        private void btnRectangleSelection_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (btnEllipseSelection != null)
+            {
+                btnEllipseSelection.IsChecked = true;
+            }
+        }
+
+        private void btnEllipseSelection_Checked(object sender, RoutedEventArgs e)
+        {
+            if (btnRectangleSelection != null)
+            {
+                btnRectangleSelection.IsChecked = false;
+            }
+        }
+
+        private void btnEllipseSelection_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (btnRectangleSelection != null)
+            {
+                btnRectangleSelection.IsChecked = true;
+            }
         }
 
         private void Export_button_click(object sender, RoutedEventArgs e)
