@@ -416,6 +416,67 @@ namespace ProjektV
             currShape = null;
         }
 
+        private Bitmap GetPixelsInsideEllipse(double left, double top, double width, double height, Bitmap image)
+        {
+            bool isFirstRedFound = false;
+            bool isFirstRedEnded = false;
+            bool isRedColored = false;
+            System.Drawing.Color color;
+
+            List<System.Windows.Point> points = new List<System.Windows.Point>();
+
+            for (int x = 0; x < image.Height; x++)
+            {
+                isFirstRedFound = false;
+                isFirstRedEnded = false;
+
+                for (int y = 0; y < image.Width; y++)
+                {
+                    color = image.GetPixel(y, x);
+
+                    isRedColored = color.R != color.B || color.R != color.G || color.B != color.G;
+                    if (!isFirstRedFound)
+                    {
+                        if (isRedColored)
+                        {
+                            isFirstRedFound = true;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+                    if (!isFirstRedEnded)
+                    {
+                        if (isRedColored)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            isFirstRedEnded = true;
+                        }
+                    }
+                    if (isRedColored)
+                    {
+                        foreach (var p in points)
+                        {
+                            image.SetPixel((int)p.X, (int)p.Y, System.Drawing.Color.Green);
+                        }
+                        points.Clear();
+                        break;
+                    }
+                    else
+                    {
+                        points.Add(new System.Windows.Point(y, x));
+                    }
+                }
+                points.Clear();
+            }
+
+            return image;
+        }
+
         private void Density_calculation_click(object sender, RoutedEventArgs e)
         {
             if (angiogramBW == null)
@@ -428,13 +489,15 @@ namespace ProjektV
             }
 
             // Calculate only selected area
-            //if (currShape is Ellipse)
-            //{
-            //    Bitmap angiogramWithEllipse = Draw_Shape_Into_Angiogram(angiogramBW);
-            //    List<int> pixels = Get_All_Pixels_From_Selection(angiogramWithEllipse);
-            //    MessageBox.Show(pixels.Count().ToString());
-            //    return;
-            //}
+            if (currShape is Ellipse)
+            {
+                Bitmap angiogramWithEllipse = Draw_Shape_Into_Angiogram(angiogramBW);
+                Bitmap temp = GetPixelsInsideEllipse(Canvas.GetLeft(currShape), Canvas.GetTop(currShape), currShape.Width, currShape.Height, angiogramWithEllipse);
+                angiogramDisplay.Source = SharedFunctions.ImageSourceFromBitmap(temp);
+                //List<int> pixels = Get_All_Pixels_From_Selection(angiogramWithEllipse);
+                //MessageBox.Show(pixels.Count().ToString());
+                return;
+            }
 
             Bitmap? angiogramForCalculation = Get_CroppedAngiogram_By_Selection();
 
@@ -779,13 +842,14 @@ namespace ProjektV
                 {
                     if (currShape is System.Windows.Shapes.Rectangle)
                     {
-                        graphics.DrawRectangle(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), shapeStrokeThickness), shapeStartX, shapeStartY, shapeWidth, shapeHeight);
+                        graphics.DrawRectangle(new System.Drawing.Pen(System.Drawing.Color.Red, shapeStrokeThickness), shapeStartX, shapeStartY, shapeWidth, shapeHeight);
                     }
                     else
                     {
-                        graphics.DrawEllipse(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), shapeStrokeThickness), shapeStartX, shapeStartY, shapeWidth, shapeHeight);
+                        graphics.DrawEllipse(new System.Drawing.Pen(System.Drawing.Color.Red, shapeStrokeThickness), shapeStartX, shapeStartY, shapeWidth, shapeHeight);
                     }
                 }
+                outputImage = RemoveBorder(outputImage);
             }
             return outputImage;
         }
