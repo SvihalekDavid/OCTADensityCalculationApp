@@ -8,6 +8,7 @@ using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
+using System.Collections.Generic;
 
 namespace ProjektV
 {
@@ -42,6 +43,25 @@ namespace ProjektV
 
             return result;
         }
+        public static double Density_Calculation(List<System.Drawing.Color> colors)
+        {
+            // Counting white pixels in the binary image
+            const int MAX_VAL = 255;
+            int whitePixelCount = 0;
+
+            foreach (System.Drawing.Color color in colors)
+            {
+                if (color.R == MAX_VAL)
+                {
+                    ++whitePixelCount;
+                }
+            }
+
+            int pixelCount = colors.Count;
+
+            return ((double)whitePixelCount / pixelCount) * 100;
+        }
+
         public static double Density_Calculation(Bitmap imgBW)
         {
             // Counting white pixels in the binary image

@@ -433,13 +433,16 @@ namespace ProjektV
             currShape = null;
         }
 
-        private Bitmap GetPixelsInsideEllipse(double left, double top, double width, double height, Bitmap image)
+        private List<System.Drawing.Color> GetPixelsInsideEllipse(double left, double top, double width, double height, Bitmap imageIn)
         {
             bool isFirstRedFound = false;
             bool isFirstRedEnded = false;
             bool isRedColored = false;
             System.Drawing.Color color;
 
+            Bitmap image = new Bitmap(imageIn);
+
+            List<System.Drawing.Color> colorsAll = new List<System.Drawing.Color>();
             List<System.Windows.Point> points = new List<System.Windows.Point>();
 
             for (int x = 0; x < image.Height; x++)
@@ -485,13 +488,61 @@ namespace ProjektV
                     }
                     else
                     {
+                        colorsAll.Add(color);
                         points.Add(new System.Windows.Point(y, x));
                     }
                 }
                 points.Clear();
             }
 
-            return image;
+            for (int y = 0; y < image.Width; y++)
+            {
+                bool isFirstGreenFound = false;
+                bool isFirstGreenEnded = false;
+                bool isGreenColored = false;
+
+                for (int x = 0; x < image.Height; x++)
+                {
+                    color = image.GetPixel(y, x);
+
+                    isGreenColored = color.R != color.B || color.R != color.G || color.B != color.G;
+                    if (!isFirstGreenFound)
+                    {
+                        if (isGreenColored)
+                        {
+                            isFirstGreenFound = true;
+                        }
+                        continue;
+                    }
+                    if (!isFirstGreenEnded)
+                    {
+                        if (isGreenColored)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            isFirstGreenEnded = true;
+                        }
+                    }
+                    if (isGreenColored)
+                    {
+                        foreach (var p in points)
+                        {
+                            image.SetPixel((int)p.X, (int)p.Y, System.Drawing.Color.Green);
+                        }
+                        points.Clear();
+                        break;
+                    }
+                    else
+                    {
+                        points.Add(new System.Windows.Point(y, x));
+                        colorsAll.Add(color);
+                    }
+                }
+                points.Clear();
+            }
+            return colorsAll;
         }
 
         private void Density_calculation_click(object sender, RoutedEventArgs e)
@@ -505,44 +556,53 @@ namespace ProjektV
                 lblThreshold.Content = threshold;
                 lblFinalThreshold.Content = threshold;
             }
+            Bitmap? angiogramForCalculation;
+            bool isChangedOn = false;
+            double result = 0;
 
             // Calculate only selected area
             if (currShape is Ellipse)
             {
                 Bitmap angiogramWithEllipse = Draw_Shape_Into_Angiogram(angiogramBW);
-                Bitmap temp = GetPixelsInsideEllipse(Canvas.GetLeft(currShape), Canvas.GetTop(currShape), currShape.Width, currShape.Height, angiogramWithEllipse);
-                angiogramDisplay.Source = SharedFunctions.ImageSourceFromBitmap(temp);
-                return;
-            }
-            Bitmap? angiogramForCalculation;
-            bool isChangedOn = false;
-            if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
-            {
-                angiogramForCalculation = Get_CroppedAngiogram_By_Selection(angiogramWithChangedThreshold!);
-                isChangedOn = true;
-            }
-            else
-            {
-                angiogramForCalculation = Get_CroppedAngiogram_By_Selection(angiogramBW);
-                isChangedOn = false;
-            }
-
-            if (angiogramForCalculation == null)
-            {
+                List<System.Drawing.Color> temp = GetPixelsInsideEllipse(Canvas.GetLeft(currShape), Canvas.GetTop(currShape), currShape.Width, currShape.Height, angiogramWithEllipse);
+                result = SharedFunctions.Density_Calculation(temp);
                 if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
                 {
-                    angiogramForCalculation = angiogramWithChangedThreshold;
+                    isChangedOn = true;
                 }
                 else
                 {
-                    angiogramForCalculation = angiogramBW;
-
+                    isChangedOn = false;
                 }
             }
+            else
+            {
+                if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+                {
+                    angiogramForCalculation = Get_CroppedAngiogram_By_Selection(angiogramWithChangedThreshold!);
+                    isChangedOn = true;
+                }
+                else
+                {
+                    angiogramForCalculation = Get_CroppedAngiogram_By_Selection(angiogramBW);
+                    isChangedOn = false;
+                }
 
-            double result = SharedFunctions.Density_Calculation(angiogramForCalculation);
+                if (angiogramForCalculation == null)
+                {
+                    if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+                    {
+                        angiogramForCalculation = angiogramWithChangedThreshold;
+                    }
+                    else
+                    {
+                        angiogramForCalculation = angiogramBW;
+                    }
+                }
+                result = SharedFunctions.Density_Calculation(angiogramForCalculation!);
+            }
 
-            if (currShape == null && angiogramForCalculation == angiogramBW)
+            if (currShape == null && !isChangedOn)
             {
                 lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + "%";
                 angiogramWholeAreaDensity = lblResult.Content.ToString();
@@ -995,6 +1055,20 @@ namespace ProjektV
             else
             {
                 MessageBox.Show("Soubor s uloženou selekcí nenalezen: " + filePath);
+            }
+        }
+
+        private void Return_Button_CLick(object sender, RoutedEventArgs e)
+        {
+            if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+            {
+                angiogramDisplay.Source = angiogramBWImageSource;
+                Remove_selection();
+                lblResult.Content = angiogramWholeAreaDensity;
+                lblResult.Visibility = Visibility.Visible;
+                isLastDensityCalculationCorrect = true;
+                lblThreshold.Content = threshold;
+                sliderThreshold.Value = threshold;
             }
         }
     }

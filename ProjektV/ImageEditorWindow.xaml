@@ -123,10 +123,12 @@
             <StackPanel Orientation="Horizontal" Grid.Column="2" Grid.Row="1">
                 <Label Grid.Row="1" Grid.Column="2" Content="Práh:" Margin="10,0,0,0" VerticalAlignment="Top" Width="39" Height="24"/>
                 <Label x:Name="lblThreshold" Grid.Row="1" Grid.Column="2" Content="0" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="38"/>
+                <Button Content="Zpět" Width="50" Height="25" Margin="0,0,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" VerticalAlignment="Top" Click="Return_Button_CLick"/>
+
             </StackPanel>
             <StackPanel Orientation="Horizontal" Grid.Column="2" Grid.Row="1">
-                <Label Grid.Row="1" Grid.Column="2" Content="Vypočítaná prahová hodnota:" Margin="10,0,0,0" Width="167" Height="24" VerticalAlignment="Top"/>
-                <Label x:Name="lblFinalThreshold" Grid.Row="1" Grid.Column="2" Content="0" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="38"/>
+                <Label Grid.Row="1" Grid.Column="2" Content="Vypočítaná prahová hodnota:" Margin="10,-3,0,0" Width="167" Height="24" VerticalAlignment="Top"/>
+                <Label x:Name="lblFinalThreshold" Grid.Row="1" Grid.Column="2" Content="0" HorizontalAlignment="Left" Margin="10,-3,0,0" VerticalAlignment="Top" Width="38"/>
             </StackPanel>
         </StackPanel>
     </Grid>
