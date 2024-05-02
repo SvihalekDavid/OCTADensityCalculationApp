@@ -22,6 +22,7 @@ using System.Windows.Shapes;
 using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text.Json;
+using Windows.Security.Authentication.Web.Provider;
 
 namespace ProjektV
 {
@@ -34,10 +35,13 @@ namespace ProjektV
         ImageSource angiogramImageSource;
         Bitmap? angiogramBW;
         ImageSource? angiogramBWImageSource;
+        Bitmap? angiogramWithChangedThreshold;
+        ImageSource? angiogramWithChangedThresholdImageSource;
         System.Windows.Shapes.Rectangle? currHandle;
         Shape? currShape;
         List<UIElement> handles = new List<UIElement>();
         string? angiogramWholeAreaDensity;
+        string? angiogramWholeAreaDensityChangedThreshold;
         bool isLastDensityCalculationCorrect = false;
         int threshold = 0;
         private System.Windows.Point lastMousePos;
@@ -73,6 +77,7 @@ namespace ProjektV
                 if (angiogramBW != null)
                 {
                     lblResult.Content = result;
+                    lblFinalThreshold.Content = threshold;
                     angiogramWholeAreaDensity = result;
                     lblResult.Visibility = Visibility.Visible;
                     lblSegmentation.Visibility = Visibility.Visible;
@@ -124,18 +129,9 @@ namespace ProjektV
                     Stroke = System.Windows.Media.Brushes.Red,
                     StrokeThickness = 3
                 };
-
                 // Set the position of the red rectangle
                 Canvas.SetLeft(currShape, rectangleStartX);
                 Canvas.SetTop(currShape, rectangleStartY);
-
-                // Add the red rectangle to the Canvas
-                mainCanvas.Children.Add(currShape);
-
-                AddHandles();
-
-                // need a new density calculation for correct export
-                isLastDensityCalculationCorrect = false;
             } 
             else
             {
@@ -169,15 +165,16 @@ namespace ProjektV
                 // Set the position of the red rectangle
                 Canvas.SetLeft(currShape, rectangleStartX);
                 Canvas.SetTop(currShape, rectangleStartY);
-
-                // Add the red rectangle to the Canvas
-                mainCanvas.Children.Add(currShape);
-
-                AddHandles();
-
-                // need a new density calculation for correct export
-                isLastDensityCalculationCorrect = false;
             }
+
+            // Add the red rectangle to the Canvas
+            mainCanvas.Children.Add(currShape);
+
+            AddHandles();
+
+            // need a new density calculation for correct export
+            isLastDensityCalculationCorrect = false;
+            lblResult.Visibility = Visibility.Hidden;
         }
 
         // Add resize handles
@@ -365,7 +362,7 @@ namespace ProjektV
             return startCoordinate;
         }
 
-        private Bitmap? Get_CroppedAngiogram_By_Selection()
+        private Bitmap? Get_CroppedAngiogram_By_Selection(Bitmap image)
         {
             if (currShape != null)
             {
@@ -382,7 +379,7 @@ namespace ProjektV
                 {
                     for (int j = rectangleStartX; j < rectangleStartX + croppedAngiogramWidth; ++j)
                     {
-                        croppedAngiogram.SetPixel(j - rectangleStartX, i - rectangleStartY, angiogramBW!.GetPixel(j, i));
+                        croppedAngiogram.SetPixel(j - rectangleStartX, i - rectangleStartY, image.GetPixel(j, i));
                     }
                 }
 
@@ -394,12 +391,32 @@ namespace ProjektV
 
         private void Remove_selection_click(object sender, RoutedEventArgs e)
         {
-            Remove_selection();
-
-            if (angiogramWholeAreaDensity != null)
+            if (currShape != null)
             {
-                lblResult.Content = angiogramWholeAreaDensity.ToString();
-                isLastDensityCalculationCorrect = true;
+                Remove_selection();
+
+                if (angiogramWholeAreaDensity != null)
+                {
+                    if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+                    {
+                        if (angiogramWholeAreaDensityChangedThreshold != null)
+                        {
+                            lblResult.Content = angiogramWholeAreaDensityChangedThreshold.ToString();
+                        }
+                        else
+                        {
+                            isLastDensityCalculationCorrect = false;
+                            lblResult.Visibility = Visibility.Hidden;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        lblResult.Content = angiogramWholeAreaDensity.ToString();
+                    }
+                    isLastDensityCalculationCorrect = true;
+                    lblResult.Visibility = Visibility.Visible;
+                }
             }
         }
 
@@ -486,6 +503,7 @@ namespace ProjektV
                 angiogramBWImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramBW);
                 sliderThreshold.Value = threshold;
                 lblThreshold.Content = threshold;
+                lblFinalThreshold.Content = threshold;
             }
 
             // Calculate only selected area
@@ -494,65 +512,62 @@ namespace ProjektV
                 Bitmap angiogramWithEllipse = Draw_Shape_Into_Angiogram(angiogramBW);
                 Bitmap temp = GetPixelsInsideEllipse(Canvas.GetLeft(currShape), Canvas.GetTop(currShape), currShape.Width, currShape.Height, angiogramWithEllipse);
                 angiogramDisplay.Source = SharedFunctions.ImageSourceFromBitmap(temp);
-                //List<int> pixels = Get_All_Pixels_From_Selection(angiogramWithEllipse);
-                //MessageBox.Show(pixels.Count().ToString());
                 return;
             }
-
-            Bitmap? angiogramForCalculation = Get_CroppedAngiogram_By_Selection();
+            Bitmap? angiogramForCalculation;
+            bool isChangedOn = false;
+            if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+            {
+                angiogramForCalculation = Get_CroppedAngiogram_By_Selection(angiogramWithChangedThreshold!);
+                isChangedOn = true;
+            }
+            else
+            {
+                angiogramForCalculation = Get_CroppedAngiogram_By_Selection(angiogramBW);
+                isChangedOn = false;
+            }
 
             if (angiogramForCalculation == null)
             {
-                angiogramForCalculation = angiogramBW;
+                if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+                {
+                    angiogramForCalculation = angiogramWithChangedThreshold;
+                }
+                else
+                {
+                    angiogramForCalculation = angiogramBW;
+
+                }
             }
 
             double result = SharedFunctions.Density_Calculation(angiogramForCalculation);
 
-            if (angiogramForCalculation == angiogramBW)
+            if (currShape == null && angiogramForCalculation == angiogramBW)
             {
                 lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + "%";
                 angiogramWholeAreaDensity = lblResult.Content.ToString();
             }
+            else if (currShape == null && isChangedOn)
+            {
+                lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + "% (manuální prahová hodnota: " + lblThreshold.Content.ToString() + ")";
+                angiogramWholeAreaDensityChangedThreshold = lblResult.Content.ToString();
+            }
             else
             {
-                lblResult.Content = "Hustota krevního řečiště vyznačené oblasti: " + result.ToString("N2") + "%";
+                if (isChangedOn)
+                {
+                    lblResult.Content = "Hustota krevního řečiště vyznačené oblasti: " + result.ToString("N2") + "% (manuální prahová hodnota: " + lblThreshold.Content.ToString() + ")";
+                }
+                else
+                {
+                    lblResult.Content = "Hustota krevního řečiště vyznačené oblasti: " + result.ToString("N2") + "%";
+                }
             }
 
             isLastDensityCalculationCorrect = true;
             lblResult.Visibility = Visibility.Visible;
             lblSegmentation.Visibility = Visibility.Visible;
             btnSegmentation.Visibility = Visibility.Visible;
-        }
-        private List<int> Get_All_Pixels_From_Selection(Bitmap image)
-        {
-            List<int> list = new List<int>();
-            int rectangleWidth = (int)Math.Floor(currShape.Width);
-            int rectangleHeight = (int)Math.Floor(currShape.Height);
-            int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currShape));
-            int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currShape));
-            int centerX = rectangleStartX + (int)Math.Floor(rectangleWidth / 2.0);
-            int centerY = rectangleStartY + (int)Math.Floor(rectangleHeight / 2.0);
-
-            return Get_All_Pixels(image, centerX, centerY, list);
-        }
-
-        private List<int> Get_All_Pixels(Bitmap image, int x, int y, List<int> l)
-        {
-            System.Drawing.Color color = image.GetPixel(x, y);
-            if (color.R != color.B || color.B != color.G || color.R != color.G)
-            {
-                return l;
-            }
-            else
-            {
-                l.Add(color.R);
-                image.SetPixel(x, y, System.Drawing.Color.Red);
-                l = Get_All_Pixels(image, x + 1, y, l);
-                l = Get_All_Pixels(image, x, y + 1, l);
-                l = Get_All_Pixels(image, x - 1, y, l);
-                l = Get_All_Pixels(image, x, y - 1, l);
-            }
-            return l;
         }
 
         private void ToggleButton_Checked(object sender, RoutedEventArgs e)
@@ -655,9 +670,22 @@ namespace ProjektV
 
                     // Set the position where you want to place the text
                     float x = 115;
+                    if (currShape == null && angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+                    {
+                        x = 15;
+                        font = new Font("Arial", 12);
+                    }
                     if (currShape != null)
                     {
-                        x = 30;
+                        if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+                        {
+                            x = 5;
+                            font = new Font("Arial", 10);
+                        }
+                        else
+                        {
+                            x = 30;
+                        }
                     }
                     float y = 10;
 
@@ -683,6 +711,10 @@ namespace ProjektV
             if (angiogramDisplay.Source == angiogramBWImageSource)
             {
                 return angiogramBW!;
+            }
+            else if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+            {
+                return angiogramWithChangedThreshold!;
             }
             return angiogram;
         }
@@ -789,10 +821,13 @@ namespace ProjektV
                 return;
             }
 
-            Bitmap angiogramWithChangedThreshold = SharedFunctions.Binarize_Image_By_Threshold(angiogram, (int)sliderThreshold.Value);
-            ImageSource angiogramWithChangedThresholdImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramWithChangedThreshold);
+            angiogramWithChangedThreshold = SharedFunctions.Binarize_Image_By_Threshold(angiogram, (int)sliderThreshold.Value);
+            angiogramWithChangedThresholdImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramWithChangedThreshold);
             angiogramDisplay.Source = angiogramWithChangedThresholdImageSource;
             lblThreshold.Content = (int)sliderThreshold.Value;
+            angiogramWholeAreaDensityChangedThreshold = null;
+            isLastDensityCalculationCorrect = false;
+            lblResult.Visibility = Visibility.Hidden;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

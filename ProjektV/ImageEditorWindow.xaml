@@ -74,7 +74,7 @@
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="60"/>
         </Grid.RowDefinitions>
         <Canvas x:Name="mainCanvas" Grid.Row="0" Grid.Column="1" Width="{Binding ActualWidth, ElementName=borderMain}" Height="{Binding ActualHeight, ElementName=borderMain}">
             <Border x:Name="borderMain" BorderBrush="Cyan" BorderThickness="3">
@@ -119,7 +119,15 @@
 
         </StackPanel>
         <Slider x:Name="sliderThreshold" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Width="512" Maximum="255" SmallChange="0" Value="0" Thumb.DragCompleted="sliderThreshold_DragCompleted"/>
-        <Label Grid.Row="1" Grid.Column="2" Content="Práh:" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="38"/>
-        <Label x:Name="lblThreshold" Grid.Row="1" Grid.Column="2" Content="0" HorizontalAlignment="Left" Margin="48,0,0,0" VerticalAlignment="Top" Width="38"/>
+        <StackPanel Grid.Column="2" Grid.Row="1">
+            <StackPanel Orientation="Horizontal" Grid.Column="2" Grid.Row="1">
+                <Label Grid.Row="1" Grid.Column="2" Content="Práh:" Margin="10,0,0,0" VerticalAlignment="Top" Width="39" Height="24"/>
+                <Label x:Name="lblThreshold" Grid.Row="1" Grid.Column="2" Content="0" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="38"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Grid.Column="2" Grid.Row="1">
+                <Label Grid.Row="1" Grid.Column="2" Content="Vypočítaná prahová hodnota:" Margin="10,0,0,0" Width="167" Height="24" VerticalAlignment="Top"/>
+                <Label x:Name="lblFinalThreshold" Grid.Row="1" Grid.Column="2" Content="0" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Width="38"/>
+            </StackPanel>
+        </StackPanel>
     </Grid>
 </Window>
