@@ -85,17 +85,16 @@
         </Canvas>
         <Label x:Name="lblResult" Grid.Row="0" Grid.Column="1" Margin="0 -560 0 0" Content="Hustota krevního řečiště: 19.58%" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
         <StackPanel Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0">
+            <Button Content="Vypočítat hustotu" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Density_calculation_click"/>
+            <Button Content="Exportovat" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Export_button_click"/>
             <Label Content="Tvar selekce:" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" FontSize="14"/>
             <StackPanel Orientation="Horizontal">
                 <ToggleButton x:Name="btnRectangleSelection" IsChecked="True" Content="&#9645;" Width="50" Height="50" Foreground="White" FontSize="14" Margin="10,10,0,0" FontFamily="Arial" Checked="btnRectangleSelection_Checked" Unchecked="btnRectangleSelection_Unchecked" Style="{StaticResource RoundToggleButton}"/>
                 <ToggleButton x:Name="btnEllipseSelection" IsChecked="False" Content="◯" Width="50" Height="50" Foreground="White" FontSize="14" Margin="30,10,0,0" FontFamily="Arial" Checked="btnEllipseSelection_Checked" Unchecked="btnEllipseSelection_Unchecked" Style="{StaticResource RoundToggleButton}"/>
             </StackPanel>
             <Button Content="Zrušit selekci" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Remove_selection_click"/>
-            <Button Content="Vypočítat hustotu" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Density_calculation_click"/>
-            <Button Content="Exportovat" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Export_button_click"/>
-            <Label Content="Velikost selekce:" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" FontSize="14"/>
-            <Button Content="+" Width="54" Height="30" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
-            <Button Content="-" Width="54" Height="30" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial"/>
+            <Button Content="Uložit selekci" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Save_Selection_Click"/>
+            <Button Content="Načíst uloženou selekci" Width="150" Height="60" Margin="0,10,0,0" FontSize="14" Style="{StaticResource RoundButton}" FontFamily="Arial" Click="Load_Selection_Click"/>
             <Label x:Name="lblSegmentation" Content="Angiogram po segmentaci:" Margin="0,10,0,0" FontSize="10"/>
             <ToggleButton x:Name="btnSegmentation" Width="150" Height="60" FontSize="14" Margin="0,0,0,0" FontFamily="Arial" Checked="ToggleButton_Checked" Unchecked="ToggleButton_Unchecked">
                 <ToggleButton.Template>
@@ -116,8 +115,7 @@
                     </ControlTemplate>
                 </ToggleButton.Template>
             </ToggleButton>
-            <Label x:Name="lblX" Content="0" Margin="0,10,0,0" FontSize="10"/>
-            <Label x:Name="lblY" Content="0" Margin="0,10,0,0" FontSize="10"/>
+
 
         </StackPanel>
         <Slider x:Name="sliderThreshold" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Width="512" Maximum="255" SmallChange="0" Value="0" Thumb.DragCompleted="sliderThreshold_DragCompleted"/>

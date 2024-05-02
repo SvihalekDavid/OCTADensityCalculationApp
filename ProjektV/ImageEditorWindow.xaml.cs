@@ -21,6 +21,7 @@ using System.Windows.Media.Media3D;
 using System.Windows.Shapes;
 using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
 using static System.Net.Mime.MediaTypeNames;
+using System.Text.Json;
 
 namespace ProjektV
 {
@@ -33,7 +34,6 @@ namespace ProjektV
         ImageSource angiogramImageSource;
         Bitmap? angiogramBW;
         ImageSource? angiogramBWImageSource;
-        System.Windows.Shapes.Rectangle? currRectangle;
         System.Windows.Shapes.Rectangle? currHandle;
         Shape? currShape;
         List<UIElement> handles = new List<UIElement>();
@@ -92,7 +92,7 @@ namespace ProjektV
 
         private void mainCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (currRectangle != null)
+            if (currShape != null)
             {
                 return;
             }
@@ -111,13 +111,13 @@ namespace ProjektV
                 rectangleStartY = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartY, mainCanvas.ActualHeight, rectangleHeight);
 
                 // Delete existing rectangle
-                if (currRectangle != null)
+                if (currShape != null)
                 {
-                    mainCanvas.Children.Remove(currRectangle);
+                    mainCanvas.Children.Remove(currShape);
                 }
 
                 // Create a red rectangle
-                currRectangle = new System.Windows.Shapes.Rectangle
+                currShape = new System.Windows.Shapes.Rectangle
                 {
                     Width = rectangleWidth,
                     Height = rectangleHeight,
@@ -126,11 +126,11 @@ namespace ProjektV
                 };
 
                 // Set the position of the red rectangle
-                Canvas.SetLeft(currRectangle, rectangleStartX);
-                Canvas.SetTop(currRectangle, rectangleStartY);
+                Canvas.SetLeft(currShape, rectangleStartX);
+                Canvas.SetTop(currShape, rectangleStartY);
 
                 // Add the red rectangle to the Canvas
-                mainCanvas.Children.Add(currRectangle);
+                mainCanvas.Children.Add(currShape);
 
                 AddHandles();
 
@@ -152,9 +152,9 @@ namespace ProjektV
                 rectangleStartY = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartY, mainCanvas.ActualHeight, rectangleHeight);
 
                 // Delete existing rectangle
-                if (currRectangle != null)
+                if (currShape != null)
                 {
-                    mainCanvas.Children.Remove(currRectangle);
+                    mainCanvas.Children.Remove(currShape);
                 }
 
                 // Create a red rectangle
@@ -183,7 +183,7 @@ namespace ProjektV
         // Add resize handles
         private void AddHandles()
         {
-            if (currRectangle != null)
+            if (currShape != null)
             {
                 for (int i = 0; i < 4; i++)
                 {
@@ -195,48 +195,67 @@ namespace ProjektV
                         Opacity = 0.6,
                     };
 
+                    // Addition to the list of handles used to track them in the main canvas
                     handles.Add(handle);
 
                     // Add mouse event handlers for handle dragging
                     handle.MouseLeftButtonDown += Handle_MouseLeftButtonDown;
 
-                    double rectangleLeft = Math.Floor(Canvas.GetLeft(currRectangle));
-                    double rectangleTop = Math.Floor(Canvas.GetTop(currRectangle));
-
                     // Position handles at the corners and edges of the rectangle
                     switch (i)
                     {
                         case 0: // Top
-                            Canvas.SetLeft(handle, rectangleLeft + Math.Floor(currRectangle.Width/2 - handle.Width/2));
-                            Canvas.SetTop(handle, rectangleTop);
-                            handle.Cursor = Cursors.SizeNS;
                             handle.Tag = "Top";
+                            handle.Cursor = Cursors.SizeNS;
                             break;
                         case 1: // Bottom
-                            Canvas.SetLeft(handle, rectangleLeft + Math.Floor(currRectangle.Width / 2 - handle.Width / 2));
-                            Canvas.SetTop(handle, rectangleTop + currRectangle.Height + 1 - Math.Floor(handle.Height));
-                            handle.Cursor = Cursors.SizeNS;
                             handle.Tag = "Bottom";
+                            handle.Cursor = Cursors.SizeNS;
                             break;
                         case 2: // Left
-                            Canvas.SetLeft(handle, rectangleLeft);
-                            Canvas.SetTop(handle, rectangleTop + Math.Floor(currRectangle.Height / 2 - handle.Height / 2));
-                            handle.Cursor = Cursors.SizeWE;
                             handle.Tag = "Left";
+                            handle.Cursor = Cursors.SizeWE;
                             break;
                         case 3: // Right
-                            Canvas.SetLeft(handle, rectangleLeft + currRectangle.Width + 1 - Math.Floor(handle.Width));
-                            Canvas.SetTop(handle, rectangleTop + Math.Floor(currRectangle.Height / 2 - handle.Height / 2));
-                            handle.Cursor = Cursors.SizeWE;
                             handle.Tag = "Right";
+                            handle.Cursor = Cursors.SizeWE;
                             break;
                     }
+
+                    int shapeLeft = (int)Math.Floor(Canvas.GetLeft(currShape));
+                    int shapeTop = (int)Math.Floor(Canvas.GetTop(currShape));
+
+                    // Make handle centered
+                    Center_Handle_To_Selection(handle, shapeLeft, shapeTop, currShape);
 
                     // Add handle to the canvas
                     mainCanvas.Children.Add(handle);
                 }
             }
         }
+        private void Center_Handle_To_Selection(System.Windows.Shapes.Rectangle handle, int shapeLeft, int shapeTop, Shape shape)
+        {
+            switch (handle.Tag)
+            {
+                case "Top":
+                    Canvas.SetLeft(handle, shapeLeft + Math.Floor(shape.Width / 2 - handle.Width / 2));
+                    Canvas.SetTop(handle, shapeTop);
+                    break;
+                case "Bottom":
+                    Canvas.SetLeft(handle, shapeLeft + Math.Floor(shape.Width / 2 - handle.Width / 2));
+                    Canvas.SetTop(handle, shapeTop + shape.Height + 1 - Math.Floor(handle.Height));
+                    break;
+                case "Left":
+                    Canvas.SetLeft(handle, shapeLeft);
+                    Canvas.SetTop(handle, shapeTop + Math.Floor(shape.Height / 2 - handle.Height / 2));
+                    break;
+                case "Right":
+                    Canvas.SetLeft(handle, shapeLeft + shape.Width + 1 - Math.Floor(handle.Width));
+                    Canvas.SetTop(handle, shapeTop + Math.Floor(shape.Height / 2 - handle.Height / 2));
+                    break;
+            }
+        }
+
         private void Handle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             lastMousePos = e.GetPosition(mainCanvas);
@@ -253,77 +272,82 @@ namespace ProjektV
             if (currHandle != null)
             {
                 System.Windows.Point currentMousePos = e.GetPosition(mainCanvas);
-                lblX.Content = currentMousePos.X;
-                lblY.Content = currentMousePos.Y;
                 Vector offset = currentMousePos - lastMousePos;
+
+                int shapeLeft = (int)Math.Floor(Canvas.GetLeft(currShape));
+                int shapeTop = (int)Math.Floor(Canvas.GetTop(currShape));
 
                 switch (currHandle.Tag)
                 {
                     case "Top": // Top handle
-                        double newTop = Math.Floor(Canvas.GetTop(currRectangle)) + offset.Y;
-                        double newHeight = currRectangle!.Height - offset.Y;
+                        double newTop = Math.Floor(Canvas.GetTop(currShape)) + offset.Y;
+                        double newHeight = currShape!.Height - offset.Y;
 
-                        if (newHeight > currRectangle.StrokeThickness*2 + 1)
+                        if (newHeight > currShape.StrokeThickness*2 + 1)
                         {
                             if (newTop < 0)
                             {
                                 currHandle = null;
                                 break;
                             }
-                            Canvas.SetTop(currRectangle, newTop);
-                            currRectangle.Height = newHeight;
+                            Canvas.SetTop(currShape, newTop);
+                            currShape.Height = newHeight;
                             Canvas.SetTop(currHandle, Math.Floor(Canvas.GetTop(currHandle)) + offset.Y);
                         }
                         break;
 
                     case "Bottom": // Bottom handle
-                        double newHeightBottom = currRectangle!.Height + offset.Y;
+                        double newHeightBottom = currShape!.Height + offset.Y;
 
-                        if (newHeightBottom > currRectangle.StrokeThickness*2 + 1)
+                        if (newHeightBottom > currShape.StrokeThickness*2 + 1)
                         {
-                            if (Math.Floor(Canvas.GetTop(currRectangle)) + newHeightBottom > mainCanvas.Height)
+                            if (Math.Floor(Canvas.GetTop(currShape)) + newHeightBottom > mainCanvas.Height)
                             {
                                 currHandle = null;
                                 break;
                             }
-                            currRectangle.Height = newHeightBottom;
+                            currShape.Height = newHeightBottom;
                             Canvas.SetTop(currHandle, Canvas.GetTop(currHandle) + offset.Y);
                         }
                         break;
 
                     case "Left": // Left handle
-                        double newLeft = Math.Floor(Canvas.GetLeft(currRectangle)) + offset.X;
-                        double newWidth = currRectangle!.Width - offset.X;
+                        double newLeft = Math.Floor(Canvas.GetLeft(currShape)) + offset.X;
+                        double newWidth = currShape!.Width - offset.X;
 
-                        if (newWidth > currRectangle.StrokeThickness * 2 + 1)
+                        if (newWidth > currShape.StrokeThickness * 2 + 1)
                         {
                             if (newLeft < 0)
                             {
                                 currHandle = null;
                                 break;
                             }
-                            Canvas.SetLeft(currRectangle, newLeft);
-                            currRectangle.Width = newWidth;
+                            Canvas.SetLeft(currShape, newLeft);
+                            currShape.Width = newWidth;
                             Canvas.SetLeft(currHandle, Math.Floor(Canvas.GetLeft(currHandle)) + offset.X);
                         }
                         break;
 
                     case "Right": // Right handle
-                        double newWidthRight = currRectangle!.Width + offset.X;
+                        double newWidthRight = currShape!.Width + offset.X;
 
-                        if (newWidthRight > currRectangle.StrokeThickness * 2 + 1)
+                        if (newWidthRight > currShape.StrokeThickness * 2 + 1)
                         {
-                            if (Math.Floor(Canvas.GetLeft(currRectangle)) + newWidthRight > mainCanvas.Width)
+                            if (Math.Floor(Canvas.GetLeft(currShape)) + newWidthRight > mainCanvas.Width)
                             {
                                 currHandle = null;
                                 break;
                             }
-                            currRectangle.Width = newWidthRight;
+                            currShape.Width = newWidthRight;
                             Canvas.SetLeft(currHandle, Canvas.GetLeft(currHandle) + offset.X);
                         }
                         break;
                 }
 
+                foreach (System.Windows.Shapes.Rectangle handle in handles)
+                {
+                    Center_Handle_To_Selection(handle, shapeLeft, shapeTop, currShape!);
+                }
                 lastMousePos = currentMousePos;
             }
         }
@@ -343,13 +367,13 @@ namespace ProjektV
 
         private Bitmap? Get_CroppedAngiogram_By_Selection()
         {
-            if (currRectangle != null)
+            if (currShape != null)
             {
-                int croppedAngiogramWidth = (int)Math.Floor(currRectangle.Width - (2 * currRectangle.StrokeThickness));
-                int croppedAngiogramHeight = (int)Math.Floor(currRectangle.Height - (2 * currRectangle.StrokeThickness));
+                int croppedAngiogramWidth = (int)Math.Floor(currShape.Width - (2 * currShape.StrokeThickness));
+                int croppedAngiogramHeight = (int)Math.Floor(currShape.Height - (2 * currShape.StrokeThickness));
 
-                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currRectangle));
-                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currRectangle));
+                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currShape));
+                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currShape));
 
                 Bitmap croppedAngiogram = new Bitmap(croppedAngiogramWidth, croppedAngiogramHeight);
 
@@ -381,15 +405,15 @@ namespace ProjektV
 
         private void Remove_selection()
         {
-            if (currRectangle != null)
+            if (currShape != null)
             {
-                mainCanvas.Children.Remove(currRectangle);
+                mainCanvas.Children.Remove(currShape);
                 foreach (UIElement handle in handles)
                 {
                     mainCanvas.Children.Remove(handle);
                 }
             }
-            currRectangle = null;
+            currShape = null;
         }
 
         private void Density_calculation_click(object sender, RoutedEventArgs e)
@@ -404,6 +428,14 @@ namespace ProjektV
             }
 
             // Calculate only selected area
+            //if (currShape is Ellipse)
+            //{
+            //    Bitmap angiogramWithEllipse = Draw_Shape_Into_Angiogram(angiogramBW);
+            //    List<int> pixels = Get_All_Pixels_From_Selection(angiogramWithEllipse);
+            //    MessageBox.Show(pixels.Count().ToString());
+            //    return;
+            //}
+
             Bitmap? angiogramForCalculation = Get_CroppedAngiogram_By_Selection();
 
             if (angiogramForCalculation == null)
@@ -428,6 +460,38 @@ namespace ProjektV
             lblSegmentation.Visibility = Visibility.Visible;
             btnSegmentation.Visibility = Visibility.Visible;
         }
+        private List<int> Get_All_Pixels_From_Selection(Bitmap image)
+        {
+            List<int> list = new List<int>();
+            int rectangleWidth = (int)Math.Floor(currShape.Width);
+            int rectangleHeight = (int)Math.Floor(currShape.Height);
+            int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currShape));
+            int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currShape));
+            int centerX = rectangleStartX + (int)Math.Floor(rectangleWidth / 2.0);
+            int centerY = rectangleStartY + (int)Math.Floor(rectangleHeight / 2.0);
+
+            return Get_All_Pixels(image, centerX, centerY, list);
+        }
+
+        private List<int> Get_All_Pixels(Bitmap image, int x, int y, List<int> l)
+        {
+            System.Drawing.Color color = image.GetPixel(x, y);
+            if (color.R != color.B || color.B != color.G || color.R != color.G)
+            {
+                return l;
+            }
+            else
+            {
+                l.Add(color.R);
+                image.SetPixel(x, y, System.Drawing.Color.Red);
+                l = Get_All_Pixels(image, x + 1, y, l);
+                l = Get_All_Pixels(image, x, y + 1, l);
+                l = Get_All_Pixels(image, x - 1, y, l);
+                l = Get_All_Pixels(image, x, y - 1, l);
+            }
+            return l;
+        }
+
         private void ToggleButton_Checked(object sender, RoutedEventArgs e)
         {
             angiogramDisplay.Source = angiogramBWImageSource;
@@ -493,20 +557,27 @@ namespace ProjektV
             // Create a Graphics object from the image
             Bitmap outputImage = new Bitmap(Determine_Bitmap_From_ImageSource());
 
-            if (currRectangle != null)
+            if (currShape != null)
             {
                 // Get rectangles parameters and modify them for the DrawRectangle function, which displays rectangles differently than canvas
-                int rectangleStrokeThickness = (int)Math.Floor(currRectangle.StrokeThickness);
-                int rectagnleWidth = (int)Math.Floor(currRectangle.Width) - rectangleStrokeThickness;
-                int rectangleHeight = (int)Math.Floor(currRectangle.Height) - rectangleStrokeThickness;
-                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currRectangle)) + 1;
-                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currRectangle)) + 1;
+                int rectangleStrokeThickness = (int)Math.Floor(currShape.StrokeThickness);
+                int rectagnleWidth = (int)Math.Floor(currShape.Width) - rectangleStrokeThickness;
+                int rectangleHeight = (int)Math.Floor(currShape.Height) - rectangleStrokeThickness;
+                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currShape)) + 1;
+                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currShape)) + 1;
 
                 outputImage = AddBorder(outputImage);
 
                 using (Graphics graphics = Graphics.FromImage(outputImage))
                 {
-                    graphics.DrawRectangle(new System.Drawing.Pen(GetColorFromBorderBrush(currRectangle.Stroke), rectangleStrokeThickness), rectangleStartX, rectangleStartY, rectagnleWidth, rectangleHeight);
+                    if (currShape is System.Windows.Shapes.Rectangle)
+                    {
+                        graphics.DrawRectangle(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), rectangleStrokeThickness), rectangleStartX, rectangleStartY, rectagnleWidth, rectangleHeight);
+                    }
+                    else
+                    {
+                        graphics.DrawEllipse(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), rectangleStrokeThickness), rectangleStartX, rectangleStartY, rectagnleWidth, rectangleHeight);
+                    }
                 }
             }
 
@@ -521,7 +592,7 @@ namespace ProjektV
 
                     // Set the position where you want to place the text
                     float x = 115;
-                    if (currRectangle != null)
+                    if (currShape != null)
                     {
                         x = 30;
                     }
@@ -582,6 +653,29 @@ namespace ProjektV
             return outputImageWithBorder;
         }
 
+        private Bitmap RemoveBorder(Bitmap outputImage)
+        {
+            int leftThickness = (int)borderMain.BorderThickness.Left;
+            int rightThickness = (int)borderMain.BorderThickness.Right;
+            int topThickness = (int)borderMain.BorderThickness.Top;
+            int bottomThickness = (int)borderMain.BorderThickness.Bottom;
+
+
+            Bitmap outputImageWithoutBorder = new Bitmap(outputImage.Width - leftThickness - rightThickness, outputImage.Height - topThickness - bottomThickness);
+
+            for (int i = 0; i < outputImage.Height; ++i)
+            {
+                for (int j = 0; j < outputImage.Width; ++j)
+                {
+                    if (i >= topThickness && i < outputImage.Height - bottomThickness && j >= leftThickness && j < outputImage.Width - rightThickness)
+                    {
+                        outputImageWithoutBorder.SetPixel(j - topThickness, i - leftThickness, outputImage.GetPixel(j, i));
+                    }
+                }
+            }
+            return outputImageWithoutBorder;
+        }
+
         private System.Drawing.Color GetColorFromBorderBrush(System.Windows.Media.Brush borderBrush)
         {
             // Convert the BorderBrush color to a SolidColorBrush (assuming it's a SolidColorBrush)
@@ -593,7 +687,7 @@ namespace ProjektV
             // Convert the System.Windows.Media.Color to a System.Drawing.Color
             System.Drawing.Color drawingColor = System.Drawing.Color.FromArgb(mediaColor.A, mediaColor.R, mediaColor.G, mediaColor.B);
 
-            // Now you can use drawingColor with outputImageWithBorder.SetPixel(j, i, drawingColor)
+            // Now you can use drawingColor with outputImageWithoutBorder.SetPixel(j, i, drawingColor)
             return drawingColor;
         }
 
@@ -636,6 +730,173 @@ namespace ProjektV
             ImageSource angiogramWithChangedThresholdImageSource = SharedFunctions.ImageSourceFromBitmap(angiogramWithChangedThreshold);
             angiogramDisplay.Source = angiogramWithChangedThresholdImageSource;
             lblThreshold.Content = (int)sliderThreshold.Value;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (currShape is Ellipse)
+            {
+                int rectangleStrokeThickness = (int)Math.Floor(currShape.StrokeThickness);
+                int rectangleWidth = (int)Math.Floor(currShape.Width) - rectangleStrokeThickness;
+                int rectangleHeight = (int)Math.Floor(currShape.Height) - rectangleStrokeThickness;
+                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currShape)) + 1;
+                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currShape)) + 1;
+                int centerX = rectangleStartX + (int)Math.Floor(rectangleWidth / 2.0);
+                int centerY = rectangleStartY + (int)Math.Floor(rectangleWidth / 2.0);
+
+
+                Bitmap outputImage = AddBorder(angiogramBW!);
+
+                using (Graphics graphics = Graphics.FromImage(outputImage))
+                {
+                    if (currShape is System.Windows.Shapes.Rectangle)
+                    {
+                        graphics.DrawRectangle(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), rectangleStrokeThickness), rectangleStartX, rectangleStartY, rectangleWidth, rectangleHeight);
+                    }
+                    else
+                    {
+                        graphics.DrawEllipse(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), rectangleStrokeThickness), rectangleStartX, rectangleStartY, rectangleWidth, rectangleHeight);
+                        Remove_selection();
+                        angiogramDisplay.Source = SharedFunctions.ImageSourceFromBitmap(RemoveBorder(outputImage));
+                    }
+                }
+            }
+        }
+
+        private Bitmap Draw_Shape_Into_Angiogram(Bitmap image)
+        {
+            Bitmap outputImage = AddBorder(image);
+
+            if (currShape != null)
+            {
+                int shapeStrokeThickness = (int)Math.Floor(currShape.StrokeThickness);
+                int shapeWidth = (int)Math.Floor(currShape.Width) - shapeStrokeThickness;
+                int shapeHeight = (int)Math.Floor(currShape.Height) - shapeStrokeThickness;
+                int shapeStartX = (int)Math.Floor(Canvas.GetLeft(currShape)) + 1;
+                int shapeStartY = (int)Math.Floor(Canvas.GetTop(currShape)) + 1;
+
+                using (Graphics graphics = Graphics.FromImage(outputImage))
+                {
+                    if (currShape is System.Windows.Shapes.Rectangle)
+                    {
+                        graphics.DrawRectangle(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), shapeStrokeThickness), shapeStartX, shapeStartY, shapeWidth, shapeHeight);
+                    }
+                    else
+                    {
+                        graphics.DrawEllipse(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), shapeStrokeThickness), shapeStartX, shapeStartY, shapeWidth, shapeHeight);
+                    }
+                }
+            }
+            return outputImage;
+        }
+
+        private void Save_Selection_Click(object sender, RoutedEventArgs e)
+        {
+            if (currShape != null)
+            {
+                int shapeLeft = (int)Math.Floor(Canvas.GetLeft(currShape));
+                int shapeTop = (int)Math.Floor(Canvas.GetTop(currShape));
+
+                int width = (int)Math.Floor(currShape.Width);
+                int height = (int)Math.Floor(currShape.Height);
+
+                string shape = "";
+
+                if (currShape is Ellipse)
+                {
+                    shape = "Ellipse";
+                }
+                else
+                {
+                    shape = "Rectangle";
+                }
+
+                ShapeProperties shapeProperties = new ShapeProperties(width, height, shapeTop, shapeLeft, shape);
+
+                // Convert the ShapeProperties instance to JSON
+                string json = JsonSerializer.Serialize(shapeProperties);
+
+                // Save the JSON string to a file
+                try
+                {
+                    File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath() + "BloodVesselCalculationAppShapeProperties.json"), json);
+                    MessageBox.Show("Selekce úspěšně uložena.");
+
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private void Load_Selection_Click(object sender, RoutedEventArgs e)
+        {
+            // Specify the path to the JSON file
+            string filePath = System.IO.Path.Combine(System.IO.Path.GetTempPath() + "BloodVesselCalculationAppShapeProperties.json");
+
+            // Check if the file exists
+            if (File.Exists(filePath))
+            {
+                // Read the JSON data from the file
+                string jsonText = File.ReadAllText(filePath);
+
+                // Deserialize the JSON data into your data structure
+                try
+                {
+                    ShapeProperties? data = JsonSerializer.Deserialize<ShapeProperties>(jsonText);
+                    if (data != null)
+                    {
+                        Remove_selection();
+                        switch (data.Kind)
+                        {
+                            case "Ellipse":
+                                currShape = new Ellipse()
+                                {
+                                    Width = data.Width,
+                                    Height = data.Height,
+                                    Stroke = System.Windows.Media.Brushes.Red,
+                                    StrokeThickness = 3
+                                };
+                                break;
+                            case "Rectangle":
+                                currShape = new System.Windows.Shapes.Rectangle()
+                                {
+                                    Width = data.Width,
+                                    Height = data.Height,
+                                    Stroke = System.Windows.Media.Brushes.Red,
+                                    StrokeThickness = 3
+                                };
+                                break;
+                        }
+
+                        // Set the position of the red rectangle
+                        Canvas.SetLeft(currShape, data.ShapeLeft);
+                        Canvas.SetTop(currShape, data.ShapeTop);
+
+                        mainCanvas.Children.Add(currShape);
+
+                        AddHandles();
+
+                        // need a new density calculation for correct export
+                        isLastDensityCalculationCorrect = false;
+                    }
+                    else
+                    {
+                        throw new Exception("JSON cannot be deserialized");
+
+                    }
+
+                }
+                catch (Exception ex)
+                { 
+                    MessageBox.Show("Nepodařilo se načíst uloženou selekci: " + ex);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Soubor s uloženou selekcí nenalezen: " + filePath);
+            }
         }
     }
 }
