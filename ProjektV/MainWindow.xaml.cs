@@ -17,7 +17,7 @@ namespace ProjektV
     /// </summary>
     public partial class MainWindow : Window
     {
-        const int ANGIOGRAM_ROW_START = 237, ANGIOGRAM_COLUMN_START = 519, ANGIOGRAM_ROW_END = 748, ANGIOGRAM_COLUMN_END = 1031;
+        const int ANGIOGRAM_ROW_START = 0, ANGIOGRAM_COLUMN_START = 266, ANGIOGRAM_ROW_END = 963, ANGIOGRAM_COLUMN_END = 1233;
         Bitmap? angiogram, angiogramFullImage, angiogramBW, angiogramBWFullImage;
         ImageSource? angiogramImageSource, angiogramFullImageImageSource, angiogramBWImageSource, angiogramBWFullImageImageSource;
         bool wasFileSelected = false;
