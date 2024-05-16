@@ -2,21 +2,17 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.Windows;
-using System.Windows.Media.Imaging;
-using System.Windows.Interop;
-using System.Runtime.InteropServices;
 using System.Windows.Media;
-using System.ComponentModel;
 
-namespace ProjektV
+namespace OCTADensityCalculationApp
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
+        // Constants indicating angiograms relevant part
         const int ANGIOGRAM_ROW_START = 0, ANGIOGRAM_COLUMN_START = 266, ANGIOGRAM_ROW_END = 963, ANGIOGRAM_COLUMN_END = 1233;
         Bitmap? angiogram, angiogramFullImage, angiogramBW, angiogramBWFullImage;
         ImageSource? angiogramImageSource, angiogramFullImageImageSource, angiogramBWImageSource, angiogramBWFullImageImageSource;
@@ -89,6 +85,7 @@ namespace ProjektV
             }
         }
 
+        // Blood vessel density calculation
         private void Calculate_Density_Button_Click(object sender, RoutedEventArgs e)
         {
             // Check for no file cases
@@ -152,6 +149,8 @@ namespace ProjektV
 
             Bitmap outputImage = Determine_Bitmap_From_ImageSource();
 
+            outputImage = SharedFunctions.AddWhiteLayers(outputImage);
+
             using (Graphics graphics = Graphics.FromImage(outputImage))
             {
                 // Set the font and brush for the text
@@ -159,8 +158,8 @@ namespace ProjektV
                 SolidBrush brush = new SolidBrush(System.Drawing.Color.Black);
 
                 // Set the position where you want to place the text
-                float x = 640;
-                float y = 30;
+                float x = 610;
+                float y = 10;
 
                 // Set any other options (e.g., quality, smoothing, etc.)
                 graphics.SmoothingMode = SmoothingMode.AntiAlias;

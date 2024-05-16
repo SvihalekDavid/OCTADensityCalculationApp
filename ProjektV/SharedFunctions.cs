@@ -10,7 +10,7 @@ using System.Windows.Media;
 using System.Windows;
 using System.Collections.Generic;
 
-namespace ProjektV
+namespace OCTADensityCalculationApp
 {
     public static class SharedFunctions
     {
@@ -43,6 +43,31 @@ namespace ProjektV
 
             return result;
         }
+
+        // Adding white pixels above Bitmap image for text input
+        public static Bitmap AddWhiteLayers(Bitmap outputImage)
+        {
+            int WHITE_LAYERS_HEIGHT = 40;
+
+            Bitmap outputImageWithLayers = new Bitmap(outputImage.Width, outputImage.Height + WHITE_LAYERS_HEIGHT);
+
+            for (int i = 0; i < outputImageWithLayers.Height; ++i)
+            {
+                for (int j = 0; j < outputImageWithLayers.Width; ++j)
+                {
+                    if (i < WHITE_LAYERS_HEIGHT)
+                    {
+                        outputImageWithLayers.SetPixel(j, i, System.Drawing.Color.White);
+                    }
+                    else
+                    {
+                        outputImageWithLayers.SetPixel(j, i, outputImage.GetPixel(j, i - WHITE_LAYERS_HEIGHT));
+                    }
+                }
+            }
+
+            return outputImageWithLayers;
+        }
         public static double Density_Calculation(List<System.Drawing.Color> colors)
         {
             // Counting white pixels in the binary image
@@ -59,7 +84,7 @@ namespace ProjektV
 
             int pixelCount = colors.Count;
 
-            return ((double)whitePixelCount / pixelCount) * 100;
+            return (double)whitePixelCount / pixelCount * 100;
         }
 
         public static double Density_Calculation(Bitmap imgBW)
@@ -70,13 +95,14 @@ namespace ProjektV
 
             int pixelCount = imgBW.Width * imgBW.Height;
 
-            return ((double)whitePixelCount / pixelCount) * 100;
+            return (double)whitePixelCount / pixelCount * 100;
         }
 
         [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool DeleteObject([In] IntPtr hObject);
 
+        // Creation of coressponding ImageSource class for Bitmap image
         public static ImageSource ImageSourceFromBitmap(Bitmap bmp)
         {
             var handle = bmp.GetHbitmap();
@@ -127,13 +153,13 @@ namespace ProjektV
                 if (wF == 0)
                     break;
 
-                sumB += (double)(t * histogram[t]);
+                sumB += t * histogram[t];
 
                 double mB = sumB / wB; // Mean background
                 double mF = (sum - sumB) / wF; // Mean foreground
 
                 // Calculate between-class variance
-                double betweenVariance = (double)wB * (double)wF * (mB - mF) * (mB - mF);
+                double betweenVariance = wB * (double)wF * (mB - mF) * (mB - mF);
                 if (betweenVariance > maxVariance)
                 {
                     maxVariance = betweenVariance;
@@ -165,6 +191,7 @@ namespace ProjektV
             return binaryImage;
         }
 
+        // Saving dialog handle
         public static void SaveFileDialog_FileOk(object sender, CancelEventArgs e)
         {
             SaveFileDialog? dlg = sender as SaveFileDialog;

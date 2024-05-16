@@ -3,28 +3,15 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Automation.Provider;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Media.Media3D;
 using System.Windows.Shapes;
-using static Microsoft.WindowsAPICodePack.Shell.PropertySystem.SystemProperties.System;
-using static System.Net.Mime.MediaTypeNames;
 using System.Text.Json;
-using Windows.Security.Authentication.Web.Provider;
 
-namespace ProjektV
+namespace OCTADensityCalculationApp
 {
     /// <summary>
     /// Interaction logic for ImageEditorWindow.xaml
@@ -54,6 +41,7 @@ namespace ProjektV
             lblResult.Visibility = Visibility.Hidden;
             lblSegmentation.Visibility = Visibility.Hidden;
             btnSegmentation.Visibility = Visibility.Hidden;
+            // Intial angiogram view handling
             try
             {
                 this.angiogram = angiogram;
@@ -94,13 +82,15 @@ namespace ProjektV
                 MessageBox.Show($"Chyba při načtení obrazu: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
+        // Handler for selection input
         private void mainCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            // In a case of already used selection
             if (currShape != null)
             {
                 return;
             }
+            // Rectangle selection
             if (btnRectangleSelection.IsChecked == true)
             {
                 // Get the mouse click position relative to the Image control
@@ -132,7 +122,8 @@ namespace ProjektV
                 // Set the position of the red rectangle
                 Canvas.SetLeft(currShape, rectangleStartX);
                 Canvas.SetTop(currShape, rectangleStartY);
-            } 
+            }
+            // Ellipse case
             else
             {
                 // Get the mouse click position relative to the Image control
@@ -147,13 +138,13 @@ namespace ProjektV
                 rectangleStartX = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartX, mainCanvas.ActualWidth, rectangleWidth);
                 rectangleStartY = Correct_Rectangles_Start_Coordinate_To_Be_Within_Canvas_Bounds(rectangleStartY, mainCanvas.ActualHeight, rectangleHeight);
 
-                // Delete existing rectangle
+                // Delete existing ellipse
                 if (currShape != null)
                 {
                     mainCanvas.Children.Remove(currShape);
                 }
 
-                // Create a red rectangle
+                // Create a red ellipse
                 currShape = new Ellipse
                 {
                     Width = rectangleWidth,
@@ -162,17 +153,17 @@ namespace ProjektV
                     StrokeThickness = 3
                 };
 
-                // Set the position of the red rectangle
+                // Set the position of the red ellipse
                 Canvas.SetLeft(currShape, rectangleStartX);
                 Canvas.SetTop(currShape, rectangleStartY);
             }
 
-            // Add the red rectangle to the Canvas
+            // Add the red ellipse to the Canvas
             mainCanvas.Children.Add(currShape);
 
             AddHandles();
 
-            // need a new density calculation for correct export
+            // A Need for a new density calculation for correct export
             isLastDensityCalculationCorrect = false;
             lblResult.Visibility = Visibility.Hidden;
         }
@@ -230,6 +221,7 @@ namespace ProjektV
                 }
             }
         }
+        // Handle movement logic
         private void Center_Handle_To_Selection(System.Windows.Shapes.Rectangle handle, int shapeLeft, int shapeTop, Shape shape)
         {
             switch (handle.Tag)
@@ -253,6 +245,7 @@ namespace ProjektV
             }
         }
 
+        // Handle drag handlers
         private void Handle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             lastMousePos = e.GetPosition(mainCanvas);
@@ -266,6 +259,7 @@ namespace ProjektV
 
         private void mainCanvas_MouseMove(object sender, MouseEventArgs e)
         {
+            // Case of a handle being dragged
             if (currHandle != null)
             {
                 System.Windows.Point currentMousePos = e.GetPosition(mainCanvas);
@@ -274,6 +268,7 @@ namespace ProjektV
                 int shapeLeft = (int)Math.Floor(Canvas.GetLeft(currShape));
                 int shapeTop = (int)Math.Floor(Canvas.GetTop(currShape));
 
+                // Handle movements
                 switch (currHandle.Tag)
                 {
                     case "Top": // Top handle
@@ -362,6 +357,7 @@ namespace ProjektV
             return startCoordinate;
         }
 
+        // Returning a new angiogram of the selection for further calculations
         private Bitmap? Get_CroppedAngiogram_By_Selection(Bitmap image)
         {
             if (currShape != null)
@@ -433,6 +429,7 @@ namespace ProjektV
             currShape = null;
         }
 
+        // Defining all pixels inside the ellipse selection
         private List<System.Drawing.Color> GetPixelsInsideEllipse(double left, double top, double width, double height, Bitmap imageIn)
         {
             bool isFirstRedFound = false;
@@ -609,18 +606,18 @@ namespace ProjektV
             }
             else if (currShape == null && isChangedOn)
             {
-                lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + "% (manuální prahová hodnota: " + lblThreshold.Content.ToString() + ")";
+                lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + "%\n(manuální práh: " + lblThreshold.Content.ToString() + ")";
                 angiogramWholeAreaDensityChangedThreshold = lblResult.Content.ToString();
             }
             else
             {
                 if (isChangedOn)
                 {
-                    lblResult.Content = "Hustota krevního řečiště vyznačené oblasti: " + result.ToString("N2") + "% (manuální prahová hodnota: " + lblThreshold.Content.ToString() + ")";
+                    lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + "%\n(vyznačené oblasti)\n" + "(manuální práh: " + lblThreshold.Content.ToString() + ")";
                 }
                 else
                 {
-                    lblResult.Content = "Hustota krevního řečiště vyznačené oblasti: " + result.ToString("N2") + "%";
+                    lblResult.Content = "Hustota krevního řečiště: " + result.ToString("N2") + "%\n" + "(vyznačené oblasti)";
                 }
             }
 
@@ -637,6 +634,14 @@ namespace ProjektV
 
         private void ToggleButton_Unchecked(object sender, RoutedEventArgs e)
         {
+            if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+            {
+                lblResult.Content = angiogramWholeAreaDensity;
+                lblResult.Visibility = Visibility.Hidden;
+                isLastDensityCalculationCorrect = false;
+                lblThreshold.Content = threshold;
+                sliderThreshold.Value = threshold;
+            }
             angiogramDisplay.Source = angiogramImageSource;
         }
 
@@ -721,7 +726,11 @@ namespace ProjektV
 
             if (isLastDensityCalculationCorrect)
             {
-                outputImage = AddWhiteLayers(outputImage);
+                outputImage = SharedFunctions.AddWhiteLayers(outputImage);
+                if (currShape != null || (currShape == null && angiogramDisplay.Source == angiogramWithChangedThresholdImageSource) || angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
+                {
+                    outputImage = SharedFunctions.AddWhiteLayers(outputImage);
+                }
                 using (Graphics graphics = Graphics.FromImage(outputImage))
                 {
                     // Set the font and brush for the text
@@ -729,24 +738,7 @@ namespace ProjektV
                     SolidBrush brush = new SolidBrush(System.Drawing.Color.Black);
 
                     // Set the position where you want to place the text
-                    float x = 115;
-                    if (currShape == null && angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
-                    {
-                        x = 15;
-                        font = new Font("Arial", 12);
-                    }
-                    if (currShape != null)
-                    {
-                        if (angiogramDisplay.Source == angiogramWithChangedThresholdImageSource)
-                        {
-                            x = 5;
-                            font = new Font("Arial", 10);
-                        }
-                        else
-                        {
-                            x = 30;
-                        }
-                    }
+                    float x = 340;
                     float y = 10;
 
                     // Set any other options (e.g., quality, smoothing, etc.)
@@ -778,7 +770,7 @@ namespace ProjektV
             }
             return angiogram;
         }
-
+        // Bitmap border addition
         private Bitmap AddBorder(Bitmap outputImage)
         {
             int leftThickness = (int)borderMain.BorderThickness.Left;
@@ -846,30 +838,6 @@ namespace ProjektV
             return drawingColor;
         }
 
-        private Bitmap AddWhiteLayers(Bitmap outputImage)
-        {
-            int WHITE_LAYERS_HEIGHT = 40;
-
-            Bitmap outputImageWithLayers = new Bitmap(outputImage.Width, outputImage.Height + WHITE_LAYERS_HEIGHT);
-
-            for (int i = 0; i < outputImageWithLayers.Height; ++i)
-            {
-                for (int j = 0; j < outputImageWithLayers.Width; ++j)
-                {
-                    if (i < WHITE_LAYERS_HEIGHT)
-                    {
-                        outputImageWithLayers.SetPixel(j, i, System.Drawing.Color.White);
-                    }
-                    else
-                    {
-                        outputImageWithLayers.SetPixel(j, i, outputImage.GetPixel(j, i - WHITE_LAYERS_HEIGHT));
-                    }
-                }
-            }
-
-            return outputImageWithLayers;
-        }
-
         private void sliderThreshold_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
             // Not chaning value case
@@ -890,43 +858,13 @@ namespace ProjektV
             lblResult.Visibility = Visibility.Hidden;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (currShape is Ellipse)
-            {
-                int rectangleStrokeThickness = (int)Math.Floor(currShape.StrokeThickness);
-                int rectangleWidth = (int)Math.Floor(currShape.Width) - rectangleStrokeThickness;
-                int rectangleHeight = (int)Math.Floor(currShape.Height) - rectangleStrokeThickness;
-                int rectangleStartX = (int)Math.Floor(Canvas.GetLeft(currShape)) + 1;
-                int rectangleStartY = (int)Math.Floor(Canvas.GetTop(currShape)) + 1;
-                int centerX = rectangleStartX + (int)Math.Floor(rectangleWidth / 2.0);
-                int centerY = rectangleStartY + (int)Math.Floor(rectangleWidth / 2.0);
-
-
-                Bitmap outputImage = AddBorder(angiogramBW!);
-
-                using (Graphics graphics = Graphics.FromImage(outputImage))
-                {
-                    if (currShape is System.Windows.Shapes.Rectangle)
-                    {
-                        graphics.DrawRectangle(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), rectangleStrokeThickness), rectangleStartX, rectangleStartY, rectangleWidth, rectangleHeight);
-                    }
-                    else
-                    {
-                        graphics.DrawEllipse(new System.Drawing.Pen(GetColorFromBorderBrush(currShape.Stroke), rectangleStrokeThickness), rectangleStartX, rectangleStartY, rectangleWidth, rectangleHeight);
-                        Remove_selection();
-                        angiogramDisplay.Source = SharedFunctions.ImageSourceFromBitmap(RemoveBorder(outputImage));
-                    }
-                }
-            }
-        }
-
         private Bitmap Draw_Shape_Into_Angiogram(Bitmap image)
         {
             Bitmap outputImage = AddBorder(image);
 
             if (currShape != null)
             {
+                // Adjust shape to be exactly drawn as on the canvas
                 int shapeStrokeThickness = (int)Math.Floor(currShape.StrokeThickness);
                 int shapeWidth = (int)Math.Floor(currShape.Width) - shapeStrokeThickness;
                 int shapeHeight = (int)Math.Floor(currShape.Height) - shapeStrokeThickness;

@@ -1,7 +1,7 @@
-﻿<Application x:Class="ProjektV.App"
+﻿<Application x:Class="OCTADensityCalculationApp.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:ProjektV"
+             xmlns:local="clr-namespace:OCTADensityCalculationApp"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
          

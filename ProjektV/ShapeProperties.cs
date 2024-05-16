@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 using System.IO;
 using System.Windows.Shapes;
 
-namespace ProjektV
+namespace OCTADensityCalculationApp
 {
     internal class ShapeProperties
     {
@@ -15,7 +15,7 @@ namespace ProjektV
         public int Height { get; set; }
 
         public int ShapeTop { get; set; }
-        public int ShapeLeft { get; set; }    
+        public int ShapeLeft { get; set; }
 
         public string Kind { get; set; }
 
